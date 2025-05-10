@@ -172,7 +172,7 @@ pub enum Register {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq)]
-    pub struct DeviceId(pub u8): FromRaw, IntoRaw {
+    pub struct DeviceId(pub u8): FromStorage, IntoStorage {
         /// Device version ID by Trim or etc
         pub version_id: u8 [read_only] @ 4..=7,
         pub product_id: u8 [read_only] @ 2..=3,
@@ -189,7 +189,7 @@ impl Default for DeviceId {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq)]
-    pub struct Switches0(pub u8): FromRaw, IntoRaw {
+    pub struct Switches0(pub u8): FromStorage, IntoStorage {
         /// Apply host pull up current to CC2 pin
         pub pu_en2: bool @ 7,
         /// Apply host pull up current to CC1 pin
@@ -242,7 +242,7 @@ impl From<Revision> for bool {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct Switches1(pub u8): FromRaw, IntoRaw {
+    pub struct Switches1(pub u8): FromStorage, IntoStorage {
         /// Bit used for constructing the GoodCRC acknowledge packet. This bit corresponds to the
         /// Port Power Role bit in the message header if an SOP packet is received.
         pub powerrole: bool [set PowerRole, get PowerRole] @ 7,
@@ -264,7 +264,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct Measure(pub u8): FromRaw, IntoRaw {
+    pub struct Measure(pub u8): FromStorage, IntoStorage {
         /// false: MDAC/comparator measurement is controlled by MEAS_CC* bits
         /// true: Measure VBUS with the MDAC/comparator. This requires MEAS_CC* bits to be 0
         pub meas_vbus: bool @ 6,
@@ -286,7 +286,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct Slice(pub u8): FromRaw, IntoRaw {
+    pub struct Slice(pub u8): FromStorage, IntoStorage {
         /// Adds hysteresis where there are now two thresholds, the lower threshold which is always
         /// the value programmed by SDAC\[5:0\] and the higher threshold that is:
         /// * `11`: 255 mV hysteresis: higher threshold = (SDAC value + 20hex)
@@ -302,7 +302,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct Control0(pub u8): FromRaw, IntoRaw {
+    pub struct Control0(pub u8): FromStorage, IntoStorage {
         /// Self clearing bit to flush the content of the transmit FIFO
         pub tx_flush: bool [write_only] @ 6,
         /// Masks all interrupts, when false interrupts to host are enabled
@@ -330,7 +330,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct Control1(pub u8): FromRaw, IntoRaw {
+    pub struct Control1(pub u8): FromStorage, IntoStorage {
         /// Enable SOP''_DEBUG (SOP double prime debug) packets, false for ignore
         pub ensop2db: bool @ 6,
         /// Enable SOP'_DEBUG (SOP prime debug) packets, false for ignore
@@ -348,7 +348,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct Control2(pub u8): FromRaw, IntoRaw {
+    pub struct Control2(pub u8): FromStorage, IntoStorage {
         /// * `00`: Don’t go into the DISABLE state after one cycle of toggle
         /// * `01`: Wait between toggle cycles for tDIS time of 40 ms
         /// * `10`: Wait between toggle cycles for tDIS time of 80 ms
@@ -375,7 +375,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct Control3(pub u8): FromRaw, IntoRaw {
+    pub struct Control3(pub u8): FromStorage, IntoStorage {
         /// Send a hard reset packet (highest priority)
         pub send_hard_reset: bool [write_only] @ 6,
 
@@ -403,7 +403,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct Mask1(pub u8): FromRaw, IntoRaw {
+    pub struct Mask1(pub u8): FromStorage, IntoStorage {
         /// Mask I_VBUSOK interrupt bit
         pub m_vbusok: bool @ 7,
         /// Mask interrupt for a transition in CC bus activity
@@ -425,7 +425,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Format, Default)]
-    pub struct Power(pub u8): FromRaw, IntoRaw {
+    pub struct Power(pub u8): FromStorage, IntoStorage {
         /// Enable internal oscillator
         pub internal_oscillator: bool @ 3,
         /// Measure block powered
@@ -439,7 +439,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct Reset(pub u8): FromRaw, IntoRaw {
+    pub struct Reset(pub u8): FromStorage, IntoStorage {
         /// Reset just the PD logic for both the PD transmitter and receiver
         pub pd_reset: bool @ 1,
 
@@ -450,7 +450,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct OcPreg(pub u8): FromRaw, IntoRaw {
+    pub struct OcPreg(pub u8): FromStorage, IntoStorage {
         /// * `true`: OCP range between 100−800 mA (max_range = 800 mA)
         /// * `false`: OCP range between 10−80 mA (max_range = 80 mA)
         pub ocp_range: bool @ 3,
@@ -469,7 +469,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct MaskA(pub u8): FromRaw, IntoRaw {
+    pub struct MaskA(pub u8): FromStorage, IntoStorage {
         /// Mask the I_OCP_TEMP interrupt
         pub m_ocp_temp: bool @ 7,
         /// Mask the I_TOGDONE interrupt
@@ -491,7 +491,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct MaskB(pub u8): FromRaw, IntoRaw {
+    pub struct MaskB(pub u8): FromStorage, IntoStorage {
         /// Mask the I_GCRCSENT interrupt
         pub m_gcrcsent: bool @ 0,
     }
@@ -499,7 +499,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct Control4(pub u8): FromRaw, IntoRaw {
+    pub struct Control4(pub u8): FromStorage, IntoStorage {
         /// In auto Rd only Toggle mode, stop Toggle at Audio accessory (Ra on both CC)
         pub tog_exit_aud: bool @ 0,
     }
@@ -507,7 +507,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct Status0A(pub u8): FromRaw, IntoRaw {
+    pub struct Status0A(pub u8): FromStorage, IntoStorage {
         /// All soft reset packets with retries have failed to get a GoodCRC acknowledge. This
         /// status is cleared when a START_TX, TXON or SEND_HARD_RESET is executed
         pub softfail: bool [read_only] @ 5,
@@ -532,7 +532,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct Status1A(pub u8): FromRaw, IntoRaw {
+    pub struct Status1A(pub u8): FromStorage, IntoStorage {
         /// * `000`: Toggle logic running (processor has previously written TOGGLE=1)
         /// * `001`: Toggle functionality has settled to SRCon CC1 (STOP_SRC1 state)
         /// * `010`: Toggle functionality has settled to SRCon CC2 (STOP_SRC2 state)
@@ -558,7 +558,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct InterruptA(pub u8): FromRaw, IntoRaw {
+    pub struct InterruptA(pub u8): FromStorage, IntoStorage {
         /// Interrupt from either a OCP event on one of the VCONN switches or an over-temperature
         /// event
         pub i_ocp_temp: bool @ 7,
@@ -583,7 +583,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct InterruptB(pub u8): FromRaw, IntoRaw {
+    pub struct InterruptB(pub u8): FromStorage, IntoStorage {
         /// Sent a GoodCRC acknowledge packet in response to an incoming packet that has the
         /// correct CRC value
         pub i_gcrcsent: bool @ 0,
@@ -592,7 +592,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Format, Default)]
-    pub struct Status0(pub u8): FromRaw, IntoRaw {
+    pub struct Status0(pub u8): FromStorage, IntoStorage {
         /// Interrupt occurs when VBUS transitions through vVBUSthr. This bit typically is used to
         /// recognize port partner during startup
         pub vbusok: bool [read_only] @ 7,
@@ -639,7 +639,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Format, Default)]
-    pub struct Status1(pub u8): FromRaw, IntoRaw {
+    pub struct Status1(pub u8): FromStorage, IntoStorage {
         /// Indicates the last packet placed in the RxFIFO is type SOP'' (SOP double prime)
         pub rxsop2: bool [read_only] @ 7,
         /// Indicates the last packet placed in the RxFIFO is type SOP' (SOP prime)
@@ -661,7 +661,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct Interrupt(pub u8): FromRaw, IntoRaw {
+    pub struct Interrupt(pub u8): FromStorage, IntoStorage {
         /// Interrupt occurs when VBUS transitions through 4.5 V. This bit typically is used to recognize port partner during startup
         pub i_vbusok: bool @ 7,
 
@@ -693,7 +693,7 @@ bitfield! {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq, Default)]
-    pub struct Fifo(pub u8): FromRaw, IntoRaw {
+    pub struct Fifo(pub u8): FromStorage, IntoStorage {
         /// Writing to this register writes a byte into the transmit FIFO. Reading from this register reads from the receive FIFO.
         /// Each byte is a coded token. Or a token followed by a fixed number of packed data byte (see token coding in Table 41)
         pub token: u8 @ 0..7,

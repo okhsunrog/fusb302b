@@ -12,11 +12,11 @@ use {
     embassy_time::Duration,
     embedded_hal_async::i2c::I2c,
     usb_pd::{
+        CcPin,
         header::{ControlMessageType, Header, MessageType},
         messages::Message,
         sink::{Driver as SinkDriver, DriverState},
         token::Token,
-        CcPin,
     },
 };
 
