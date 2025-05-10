@@ -1,0 +1,25 @@
+[package]
+name = "fusb302b"
+version = "0.0.1"
+edition = "2021"
+description = "FUSB302B driver for `usbpd` library, implementing `usbpd-traits`."
+documentation = "https://docs.rs/fusb302b"
+repository = "https://github.com/okhsunrog/fusb302b"
+homepage = "https://github.com/okhsunrog/fusb302b"
+license = "MIT"
+keywords = ["nostd", "usbpd", "driver", "embedded", "fusb302b"]
+
+[lib]
+harness = false # do not use the built-in cargo test harness -> resolve rust-analyzer errors
+test = false
+
+[dependencies]
+byteorder = { version = "1.5.0", default-features = false }
+embedded-hal-async = "1.0.0"
+heapless = { version = "0.8.0", features = ["defmt-03"] }
+defmt = "0.3.6"
+paste = "1.0.14"
+proc-bitfield = "0.4.0"
+embassy-time = "0.3.0"
+
+usb-pd = { git = "https://github.com/fmckeogh/usb-pd-rs" }
