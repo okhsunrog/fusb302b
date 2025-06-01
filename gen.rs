@@ -1088,15 +1088,15 @@ pub mod field_sets {
         }
         ///Read the `powerrole` field of the register.
         ///
-        ///Power role for GoodCRC packet (true: Source, false: Sink for SOP).
-        pub fn powerrole(&self) -> bool {
+        ///Power role for GoodCRC packet.
+        pub fn powerrole(&self) -> super::PowerRolePort {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
                     u8,
                     ::device_driver::ops::BE,
                 >(&self.bits, 7, 8)
             };
-            raw > 0
+            unsafe { raw.try_into().unwrap_unchecked() }
         }
         ///Read the `specrev` field of the register.
         ///
@@ -1162,9 +1162,9 @@ pub mod field_sets {
         }
         ///Write the `powerrole` field of the register.
         ///
-        ///Power role for GoodCRC packet (true: Source, false: Sink for SOP).
-        pub fn set_powerrole(&mut self, value: bool) {
-            let raw = value as _;
+        ///Power role for GoodCRC packet.
+        pub fn set_powerrole(&mut self, value: super::PowerRolePort) {
+            let raw = value.into();
             unsafe {
                 ::device_driver::ops::store_lsb0::<
                     u8,
@@ -1271,7 +1271,7 @@ pub mod field_sets {
     impl defmt::Format for Switches1 {
         fn format(&self, f: defmt::Formatter) {
             defmt::write!(f, "Switches1 { ");
-            defmt::write!(f, "powerrole: {=bool}, ", &self.powerrole());
+            defmt::write!(f, "powerrole: {}, ", &self.powerrole());
             defmt::write!(f, "specrev: {}, ", &self.specrev());
             defmt::write!(f, "datarole: {=bool}, ", &self.datarole());
             defmt::write!(f, "auto_crc: {=bool}, ", &self.auto_crc());
@@ -6181,6 +6181,38 @@ pub mod field_sets {
     impl From<Interrupt> for FieldSetValue {
         fn from(val: Interrupt) -> Self {
             Self::Interrupt(val)
+        }
+    }
+}
+#[repr(u8)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum PowerRolePort {
+    ///Sink for SOP
+    Sink = 0,
+    ///Source for SOP
+    Source = 1,
+}
+impl core::convert::TryFrom<u8> for PowerRolePort {
+    type Error = ::device_driver::ConversionError<u8>;
+    fn try_from(val: u8) -> Result<Self, Self::Error> {
+        match val {
+            0 => Ok(Self::Sink),
+            1 => Ok(Self::Source),
+            val => {
+                Err(::device_driver::ConversionError {
+                    source: val,
+                    target: "PowerRolePort",
+                })
+            }
+        }
+    }
+}
+impl From<PowerRolePort> for u8 {
+    fn from(val: PowerRolePort) -> Self {
+        match val {
+            PowerRolePort::Sink => 0,
+            PowerRolePort::Source => 1,
         }
     }
 }
