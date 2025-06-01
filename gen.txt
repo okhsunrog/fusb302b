@@ -492,7 +492,7 @@ impl<I> Device<I> {
             ::device_driver::RO,
         >::new(self.interface(), address as u8, field_sets::Status1A::new)
     }
-    ///Interrupt Register A (read/clear)
+    ///Interrupt Register A. Read to get status, write 1 to corresponding bit to clear.
     pub fn interrupta(
         &mut self,
     ) -> ::device_driver::RegisterOperation<
@@ -511,7 +511,7 @@ impl<I> Device<I> {
             ::device_driver::RW,
         >::new(self.interface(), address as u8, field_sets::Interrupta::new)
     }
-    ///Interrupt Register B (read/clear)
+    ///Interrupt Register B. Read to get status, write 1 to corresponding bit to clear.
     pub fn interruptb(
         &mut self,
     ) -> ::device_driver::RegisterOperation<
@@ -568,7 +568,7 @@ impl<I> Device<I> {
             ::device_driver::RO,
         >::new(self.interface(), address as u8, field_sets::Status1::new)
     }
-    ///Interrupt Status Register (read/clear)
+    ///Interrupt Status Register. Read to get status, write 1 to corresponding bit to clear.
     pub fn interrupt(
         &mut self,
     ) -> ::device_driver::RegisterOperation<
@@ -1674,18 +1674,6 @@ pub mod field_sets {
         pub const fn new_zero() -> Self {
             Self { bits: [0; 1] }
         }
-        ///Read the `tx_flush` field of the register.
-        ///
-        ///Flush transmit FIFO (true: self-clearing flush).
-        pub fn tx_flush(&self) -> bool {
-            let raw = unsafe {
-                ::device_driver::ops::load_lsb0::<
-                    u8,
-                    ::device_driver::ops::BE,
-                >(&self.bits, 6, 7)
-            };
-            raw > 0
-        }
         ///Read the `int_mask` field of the register.
         ///
         ///Interrupt mask (true: mask all interrupts).
@@ -1722,21 +1710,9 @@ pub mod field_sets {
             };
             raw > 0
         }
-        ///Read the `tx_start` field of the register.
-        ///
-        ///Start transmission (true: initiate packet transmission).
-        pub fn tx_start(&self) -> bool {
-            let raw = unsafe {
-                ::device_driver::ops::load_lsb0::<
-                    u8,
-                    ::device_driver::ops::BE,
-                >(&self.bits, 0, 1)
-            };
-            raw > 0
-        }
         ///Write the `tx_flush` field of the register.
         ///
-        ///Flush transmit FIFO (true: self-clearing flush).
+        ///Flush transmit FIFO. Write true to trigger; self-clearing.
         pub fn set_tx_flush(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -1784,7 +1760,7 @@ pub mod field_sets {
         }
         ///Write the `tx_start` field of the register.
         ///
-        ///Start transmission (true: initiate packet transmission).
+        ///Start transmission. Write true to trigger; self-clearing.
         pub fn set_tx_start(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -1952,18 +1928,6 @@ pub mod field_sets {
             };
             raw > 0
         }
-        ///Read the `rx_flush` field of the register.
-        ///
-        ///Flush receive FIFO (true: self-clearing flush).
-        pub fn rx_flush(&self) -> bool {
-            let raw = unsafe {
-                ::device_driver::ops::load_lsb0::<
-                    u8,
-                    ::device_driver::ops::BE,
-                >(&self.bits, 2, 3)
-            };
-            raw > 0
-        }
         ///Read the `ensop_2` field of the register.
         ///
         ///Enable SOP'' packets (true: enabled).
@@ -2026,7 +1990,7 @@ pub mod field_sets {
         }
         ///Write the `rx_flush` field of the register.
         ///
-        ///Flush receive FIFO (true: self-clearing flush).
+        ///Flush receive FIFO. Write true to trigger; self-clearing.
         pub fn set_rx_flush(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -2430,18 +2394,6 @@ pub mod field_sets {
         pub const fn new_zero() -> Self {
             Self { bits: [0; 1] }
         }
-        ///Read the `send_hard_reset` field of the register.
-        ///
-        ///Send hard reset (true: initiate, self-clearing).
-        pub fn send_hard_reset(&self) -> bool {
-            let raw = unsafe {
-                ::device_driver::ops::load_lsb0::<
-                    u8,
-                    ::device_driver::ops::BE,
-                >(&self.bits, 6, 7)
-            };
-            raw > 0
-        }
         ///Read the `bist_tmode` field of the register.
         ///
         ///BIST test mode (true: clear RxFIFO after GoodCRC).
@@ -2504,7 +2456,7 @@ pub mod field_sets {
         }
         ///Write the `send_hard_reset` field of the register.
         ///
-        ///Send hard reset (true: initiate, self-clearing).
+        ///Send hard reset. Write true to initiate; self-clearing.
         pub fn set_send_hard_reset(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -3026,28 +2978,100 @@ pub mod field_sets {
         pub const fn new_zero() -> Self {
             Self { bits: [0; 1] }
         }
-        ///Read the `pwr` field of the register.
+        ///Read the `pwr_3_internal_oscillator_enable` field of the register.
         ///
-        ///Power control bits (bitwise enables for components).
-        pub fn pwr(&self) -> u8 {
+        ///Enable internal oscillator (PWR[3]).
+        pub fn pwr_3_internal_oscillator_enable(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
                     u8,
                     ::device_driver::ops::BE,
-                >(&self.bits, 0, 4)
+                >(&self.bits, 3, 4)
             };
-            raw
+            raw > 0
         }
-        ///Write the `pwr` field of the register.
+        ///Read the `pwr_2_measure_block_power_enable` field of the register.
         ///
-        ///Power control bits (bitwise enables for components).
-        pub fn set_pwr(&mut self, value: u8) {
-            let raw = value;
+        ///Measure block powered (PWR[2]).
+        pub fn pwr_2_measure_block_power_enable(&self) -> bool {
+            let raw = unsafe {
+                ::device_driver::ops::load_lsb0::<
+                    u8,
+                    ::device_driver::ops::BE,
+                >(&self.bits, 2, 3)
+            };
+            raw > 0
+        }
+        ///Read the `pwr_1_receiver_and_measure_refs_enable` field of the register.
+        ///
+        ///Receiver powered and current references for Measure block (PWR[1]).
+        pub fn pwr_1_receiver_and_measure_refs_enable(&self) -> bool {
+            let raw = unsafe {
+                ::device_driver::ops::load_lsb0::<
+                    u8,
+                    ::device_driver::ops::BE,
+                >(&self.bits, 1, 2)
+            };
+            raw > 0
+        }
+        ///Read the `pwr_0_bandgap_and_wake_enable` field of the register.
+        ///
+        ///Bandgap and wake circuit enabled (PWR[0]).
+        pub fn pwr_0_bandgap_and_wake_enable(&self) -> bool {
+            let raw = unsafe {
+                ::device_driver::ops::load_lsb0::<
+                    u8,
+                    ::device_driver::ops::BE,
+                >(&self.bits, 0, 1)
+            };
+            raw > 0
+        }
+        ///Write the `pwr_3_internal_oscillator_enable` field of the register.
+        ///
+        ///Enable internal oscillator (PWR[3]).
+        pub fn set_pwr_3_internal_oscillator_enable(&mut self, value: bool) {
+            let raw = value as _;
             unsafe {
                 ::device_driver::ops::store_lsb0::<
                     u8,
                     ::device_driver::ops::BE,
-                >(raw, 0, 4, &mut self.bits)
+                >(raw, 3, 4, &mut self.bits)
+            };
+        }
+        ///Write the `pwr_2_measure_block_power_enable` field of the register.
+        ///
+        ///Measure block powered (PWR[2]).
+        pub fn set_pwr_2_measure_block_power_enable(&mut self, value: bool) {
+            let raw = value as _;
+            unsafe {
+                ::device_driver::ops::store_lsb0::<
+                    u8,
+                    ::device_driver::ops::BE,
+                >(raw, 2, 3, &mut self.bits)
+            };
+        }
+        ///Write the `pwr_1_receiver_and_measure_refs_enable` field of the register.
+        ///
+        ///Receiver powered and current references for Measure block (PWR[1]).
+        pub fn set_pwr_1_receiver_and_measure_refs_enable(&mut self, value: bool) {
+            let raw = value as _;
+            unsafe {
+                ::device_driver::ops::store_lsb0::<
+                    u8,
+                    ::device_driver::ops::BE,
+                >(raw, 1, 2, &mut self.bits)
+            };
+        }
+        ///Write the `pwr_0_bandgap_and_wake_enable` field of the register.
+        ///
+        ///Bandgap and wake circuit enabled (PWR[0]).
+        pub fn set_pwr_0_bandgap_and_wake_enable(&mut self, value: bool) {
+            let raw = value as _;
+            unsafe {
+                ::device_driver::ops::store_lsb0::<
+                    u8,
+                    ::device_driver::ops::BE,
+                >(raw, 0, 1, &mut self.bits)
             };
         }
     }
@@ -3065,7 +3089,28 @@ pub mod field_sets {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Power");
             {
-                d.field("pwr", &self.pwr());
+                d.field(
+                    "pwr_3_internal_oscillator_enable",
+                    &self.pwr_3_internal_oscillator_enable(),
+                );
+            }
+            {
+                d.field(
+                    "pwr_2_measure_block_power_enable",
+                    &self.pwr_2_measure_block_power_enable(),
+                );
+            }
+            {
+                d.field(
+                    "pwr_1_receiver_and_measure_refs_enable",
+                    &self.pwr_1_receiver_and_measure_refs_enable(),
+                );
+            }
+            {
+                d.field(
+                    "pwr_0_bandgap_and_wake_enable",
+                    &self.pwr_0_bandgap_and_wake_enable(),
+                );
             }
             d.finish()
         }
@@ -3074,7 +3119,26 @@ pub mod field_sets {
     impl defmt::Format for Power {
         fn format(&self, f: defmt::Formatter) {
             defmt::write!(f, "Power { ");
-            defmt::write!(f, "pwr: {=u8}, ", &self.pwr());
+            defmt::write!(
+                f,
+                "pwr_3_internal_oscillator_enable: {=bool}, ",
+                &self.pwr_3_internal_oscillator_enable(),
+            );
+            defmt::write!(
+                f,
+                "pwr_2_measure_block_power_enable: {=bool}, ",
+                &self.pwr_2_measure_block_power_enable(),
+            );
+            defmt::write!(
+                f,
+                "pwr_1_receiver_and_measure_refs_enable: {=bool}, ",
+                &self.pwr_1_receiver_and_measure_refs_enable(),
+            );
+            defmt::write!(
+                f,
+                "pwr_0_bandgap_and_wake_enable: {=bool}, ",
+                &self.pwr_0_bandgap_and_wake_enable(),
+            );
             defmt::write!(f, "}");
         }
     }
@@ -3158,7 +3222,7 @@ pub mod field_sets {
         }
         ///Read the `pd_reset` field of the register.
         ///
-        ///Reset PD logic (true: reset, self-clearing).
+        ///Reset PD logic. Write true to reset; self-clearing.
         pub fn pd_reset(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -3170,7 +3234,7 @@ pub mod field_sets {
         }
         ///Read the `sw_res` field of the register.
         ///
-        ///Software reset (true: reset entire device, self-clearing).
+        ///Software reset. Write true to reset entire device; self-clearing.
         pub fn sw_res(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -3182,7 +3246,7 @@ pub mod field_sets {
         }
         ///Write the `pd_reset` field of the register.
         ///
-        ///Reset PD logic (true: reset, self-clearing).
+        ///Reset PD logic. Write true to reset; self-clearing.
         pub fn set_pd_reset(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -3194,7 +3258,7 @@ pub mod field_sets {
         }
         ///Write the `sw_res` field of the register.
         ///
-        ///Software reset (true: reset entire device, self-clearing).
+        ///Software reset. Write true to reset entire device; self-clearing.
         pub fn set_sw_res(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -4084,7 +4148,7 @@ pub mod field_sets {
         }
         ///Read the `power` field of the register.
         ///
-        ///Internal power state bits.
+        ///Internal power state bits (POWER3, POWER2).
         pub fn power(&self) -> u8 {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -4144,7 +4208,7 @@ pub mod field_sets {
         }
         ///Write the `power` field of the register.
         ///
-        ///Internal power state bits.
+        ///Internal power state bits (POWER3, POWER2).
         pub fn set_power(&mut self, value: u8) {
             let raw = value;
             unsafe {
@@ -4489,7 +4553,7 @@ pub mod field_sets {
             self
         }
     }
-    ///Interrupt Register A (read/clear)
+    ///Interrupt Register A. Read to get status, write 1 to corresponding bit to clear.
     #[derive(Copy, Clone, Eq, PartialEq)]
     pub struct Interrupta {
         /// The internal bits
@@ -4518,7 +4582,7 @@ pub mod field_sets {
         }
         ///Read the `i_ocp_temp` field of the register.
         ///
-        ///OCP or over-temp interrupt (true: occurred).
+        ///OCP or over-temp interrupt (true: occurred). Write 1 to clear this flag.
         pub fn i_ocp_temp(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -4530,7 +4594,7 @@ pub mod field_sets {
         }
         ///Read the `i_togdone` field of the register.
         ///
-        ///Toggle done interrupt (true: occurred).
+        ///Toggle done interrupt (true: occurred). Write 1 to clear this flag.
         pub fn i_togdone(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -4542,7 +4606,7 @@ pub mod field_sets {
         }
         ///Read the `i_softfail` field of the register.
         ///
-        ///Soft reset fail interrupt (true: occurred).
+        ///Soft reset fail interrupt (true: occurred). Write 1 to clear this flag.
         pub fn i_softfail(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -4554,7 +4618,7 @@ pub mod field_sets {
         }
         ///Read the `i_retryfail` field of the register.
         ///
-        ///Retry fail interrupt (true: occurred).
+        ///Retry fail interrupt (true: occurred). Write 1 to clear this flag.
         pub fn i_retryfail(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -4566,7 +4630,7 @@ pub mod field_sets {
         }
         ///Read the `i_hardsent` field of the register.
         ///
-        ///Hard reset sent interrupt (true: occurred).
+        ///Hard reset sent interrupt (true: occurred). Write 1 to clear this flag.
         pub fn i_hardsent(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -4578,7 +4642,7 @@ pub mod field_sets {
         }
         ///Read the `i_txsent` field of the register.
         ///
-        ///Packet sent interrupt (true: occurred).
+        ///Packet sent interrupt (true: occurred). Write 1 to clear this flag.
         pub fn i_txsent(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -4590,7 +4654,7 @@ pub mod field_sets {
         }
         ///Read the `i_softrst` field of the register.
         ///
-        ///Soft reset received interrupt (true: occurred).
+        ///Soft reset received interrupt (true: occurred). Write 1 to clear this flag.
         pub fn i_softrst(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -4602,7 +4666,7 @@ pub mod field_sets {
         }
         ///Read the `i_hardrst` field of the register.
         ///
-        ///Hard reset received interrupt (true: occurred).
+        ///Hard reset received interrupt (true: occurred). Write 1 to clear this flag.
         pub fn i_hardrst(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -4614,7 +4678,7 @@ pub mod field_sets {
         }
         ///Write the `i_ocp_temp` field of the register.
         ///
-        ///OCP or over-temp interrupt (true: occurred).
+        ///OCP or over-temp interrupt (true: occurred). Write 1 to clear this flag.
         pub fn set_i_ocp_temp(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -4626,7 +4690,7 @@ pub mod field_sets {
         }
         ///Write the `i_togdone` field of the register.
         ///
-        ///Toggle done interrupt (true: occurred).
+        ///Toggle done interrupt (true: occurred). Write 1 to clear this flag.
         pub fn set_i_togdone(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -4638,7 +4702,7 @@ pub mod field_sets {
         }
         ///Write the `i_softfail` field of the register.
         ///
-        ///Soft reset fail interrupt (true: occurred).
+        ///Soft reset fail interrupt (true: occurred). Write 1 to clear this flag.
         pub fn set_i_softfail(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -4650,7 +4714,7 @@ pub mod field_sets {
         }
         ///Write the `i_retryfail` field of the register.
         ///
-        ///Retry fail interrupt (true: occurred).
+        ///Retry fail interrupt (true: occurred). Write 1 to clear this flag.
         pub fn set_i_retryfail(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -4662,7 +4726,7 @@ pub mod field_sets {
         }
         ///Write the `i_hardsent` field of the register.
         ///
-        ///Hard reset sent interrupt (true: occurred).
+        ///Hard reset sent interrupt (true: occurred). Write 1 to clear this flag.
         pub fn set_i_hardsent(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -4674,7 +4738,7 @@ pub mod field_sets {
         }
         ///Write the `i_txsent` field of the register.
         ///
-        ///Packet sent interrupt (true: occurred).
+        ///Packet sent interrupt (true: occurred). Write 1 to clear this flag.
         pub fn set_i_txsent(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -4686,7 +4750,7 @@ pub mod field_sets {
         }
         ///Write the `i_softrst` field of the register.
         ///
-        ///Soft reset received interrupt (true: occurred).
+        ///Soft reset received interrupt (true: occurred). Write 1 to clear this flag.
         pub fn set_i_softrst(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -4698,7 +4762,7 @@ pub mod field_sets {
         }
         ///Write the `i_hardrst` field of the register.
         ///
-        ///Hard reset received interrupt (true: occurred).
+        ///Hard reset received interrupt (true: occurred). Write 1 to clear this flag.
         pub fn set_i_hardrst(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -4815,7 +4879,7 @@ pub mod field_sets {
             self
         }
     }
-    ///Interrupt Register B (read/clear)
+    ///Interrupt Register B. Read to get status, write 1 to corresponding bit to clear.
     #[derive(Copy, Clone, Eq, PartialEq)]
     pub struct Interruptb {
         /// The internal bits
@@ -4844,7 +4908,7 @@ pub mod field_sets {
         }
         ///Read the `i_gcrcsent` field of the register.
         ///
-        ///GoodCRC sent interrupt (true: occurred).
+        ///GoodCRC sent interrupt (true: occurred). Write 1 to clear this flag.
         pub fn i_gcrcsent(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -4856,7 +4920,7 @@ pub mod field_sets {
         }
         ///Write the `i_gcrcsent` field of the register.
         ///
-        ///GoodCRC sent interrupt (true: occurred).
+        ///GoodCRC sent interrupt (true: occurred). Write 1 to clear this flag.
         pub fn set_i_gcrcsent(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -5046,7 +5110,7 @@ pub mod field_sets {
         }
         ///Read the `bc_lvl` field of the register.
         ///
-        ///Battery charge level on CC.
+        ///Current voltage status of the measured CC pin interpreted as host current levels.
         pub fn bc_lvl(&self) -> super::BcLvl {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -5130,7 +5194,7 @@ pub mod field_sets {
         }
         ///Write the `bc_lvl` field of the register.
         ///
-        ///Battery charge level on CC.
+        ///Current voltage status of the measured CC pin interpreted as host current levels.
         pub fn set_bc_lvl(&mut self, value: super::BcLvl) {
             let raw = value.into();
             unsafe {
@@ -5569,7 +5633,7 @@ pub mod field_sets {
             self
         }
     }
-    ///Interrupt Status Register (read/clear)
+    ///Interrupt Status Register. Read to get status, write 1 to corresponding bit to clear.
     #[derive(Copy, Clone, Eq, PartialEq)]
     pub struct Interrupt {
         /// The internal bits
@@ -5598,7 +5662,7 @@ pub mod field_sets {
         }
         ///Read the `i_vbusok` field of the register.
         ///
-        ///VBUSOK interrupt (true: VBUS transitioned).
+        ///VBUSOK interrupt (true: VBUS transitioned). Write 1 to clear this flag.
         pub fn i_vbusok(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -5610,7 +5674,7 @@ pub mod field_sets {
         }
         ///Read the `i_activity` field of the register.
         ///
-        ///Activity interrupt (true: CC activity change).
+        ///Activity interrupt (true: CC activity change). Write 1 to clear this flag.
         pub fn i_activity(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -5622,7 +5686,7 @@ pub mod field_sets {
         }
         ///Read the `i_comp_chng` field of the register.
         ///
-        ///Comparator change interrupt (true: occurred).
+        ///Comparator change interrupt (true: occurred). Write 1 to clear this flag.
         pub fn i_comp_chng(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -5634,7 +5698,7 @@ pub mod field_sets {
         }
         ///Read the `i_crc_chk` field of the register.
         ///
-        ///CRC check interrupt (true: packet validated).
+        ///CRC check interrupt (true: packet validated). Write 1 to clear this flag.
         pub fn i_crc_chk(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -5646,7 +5710,7 @@ pub mod field_sets {
         }
         ///Read the `i_alert` field of the register.
         ///
-        ///Alert interrupt (true: error condition).
+        ///Alert interrupt (true: error condition). Write 1 to clear this flag.
         pub fn i_alert(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -5658,7 +5722,7 @@ pub mod field_sets {
         }
         ///Read the `i_wake` field of the register.
         ///
-        ///Wake interrupt (true: device attach attempt).
+        ///Wake interrupt (true: device attach attempt). Write 1 to clear this flag.
         pub fn i_wake(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -5670,7 +5734,7 @@ pub mod field_sets {
         }
         ///Read the `i_collision` field of the register.
         ///
-        ///Collision interrupt (true: transmit attempted during activity).
+        ///Collision interrupt (true: transmit attempted during activity). Write 1 to clear this flag.
         pub fn i_collision(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -5682,7 +5746,7 @@ pub mod field_sets {
         }
         ///Read the `i_bc_lvl` field of the register.
         ///
-        ///BC_LVL interrupt (true: current level changed).
+        ///BC_LVL interrupt (true: current level changed). Write 1 to clear this flag.
         pub fn i_bc_lvl(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -5694,7 +5758,7 @@ pub mod field_sets {
         }
         ///Write the `i_vbusok` field of the register.
         ///
-        ///VBUSOK interrupt (true: VBUS transitioned).
+        ///VBUSOK interrupt (true: VBUS transitioned). Write 1 to clear this flag.
         pub fn set_i_vbusok(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -5706,7 +5770,7 @@ pub mod field_sets {
         }
         ///Write the `i_activity` field of the register.
         ///
-        ///Activity interrupt (true: CC activity change).
+        ///Activity interrupt (true: CC activity change). Write 1 to clear this flag.
         pub fn set_i_activity(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -5718,7 +5782,7 @@ pub mod field_sets {
         }
         ///Write the `i_comp_chng` field of the register.
         ///
-        ///Comparator change interrupt (true: occurred).
+        ///Comparator change interrupt (true: occurred). Write 1 to clear this flag.
         pub fn set_i_comp_chng(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -5730,7 +5794,7 @@ pub mod field_sets {
         }
         ///Write the `i_crc_chk` field of the register.
         ///
-        ///CRC check interrupt (true: packet validated).
+        ///CRC check interrupt (true: packet validated). Write 1 to clear this flag.
         pub fn set_i_crc_chk(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -5742,7 +5806,7 @@ pub mod field_sets {
         }
         ///Write the `i_alert` field of the register.
         ///
-        ///Alert interrupt (true: error condition).
+        ///Alert interrupt (true: error condition). Write 1 to clear this flag.
         pub fn set_i_alert(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -5754,7 +5818,7 @@ pub mod field_sets {
         }
         ///Write the `i_wake` field of the register.
         ///
-        ///Wake interrupt (true: device attach attempt).
+        ///Wake interrupt (true: device attach attempt). Write 1 to clear this flag.
         pub fn set_i_wake(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -5766,7 +5830,7 @@ pub mod field_sets {
         }
         ///Write the `i_collision` field of the register.
         ///
-        ///Collision interrupt (true: transmit attempted during activity).
+        ///Collision interrupt (true: transmit attempted during activity). Write 1 to clear this flag.
         pub fn set_i_collision(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -5778,7 +5842,7 @@ pub mod field_sets {
         }
         ///Write the `i_bc_lvl` field of the register.
         ///
-        ///BC_LVL interrupt (true: current level changed).
+        ///BC_LVL interrupt (true: current level changed). Write 1 to clear this flag.
         pub fn set_i_bc_lvl(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -5933,15 +5997,15 @@ pub mod field_sets {
         Status0A(Status0A),
         ///Status Register 1A
         Status1A(Status1A),
-        ///Interrupt Register A (read/clear)
+        ///Interrupt Register A. Read to get status, write 1 to corresponding bit to clear.
         Interrupta(Interrupta),
-        ///Interrupt Register B (read/clear)
+        ///Interrupt Register B. Read to get status, write 1 to corresponding bit to clear.
         Interruptb(Interruptb),
         ///Status Register 0
         Status0(Status0),
         ///Status Register 1
         Status1(Status1),
-        ///Interrupt Status Register (read/clear)
+        ///Interrupt Status Register. Read to get status, write 1 to corresponding bit to clear.
         Interrupt(Interrupt),
     }
     impl core::fmt::Debug for FieldSetValue {
@@ -6276,20 +6340,20 @@ impl From<TogSavePwr> for u8 {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum ToggleMode {
-    ///SRC polling
-    SrcPolling = 3,
-    ///SNK polling
-    SnkPolling = 2,
     ///DRP polling
     DrpPolling = 1,
+    ///SNK polling
+    SnkPolling = 2,
+    ///SRC polling
+    SrcPolling = 3,
 }
 impl core::convert::TryFrom<u8> for ToggleMode {
     type Error = ::device_driver::ConversionError<u8>;
     fn try_from(val: u8) -> Result<Self, Self::Error> {
         match val {
-            3 => Ok(Self::SrcPolling),
-            2 => Ok(Self::SnkPolling),
             1 => Ok(Self::DrpPolling),
+            2 => Ok(Self::SnkPolling),
+            3 => Ok(Self::SrcPolling),
             val => {
                 Err(::device_driver::ConversionError {
                     source: val,
@@ -6302,9 +6366,9 @@ impl core::convert::TryFrom<u8> for ToggleMode {
 impl From<ToggleMode> for u8 {
     fn from(val: ToggleMode) -> Self {
         match val {
-            ToggleMode::SrcPolling => 3,
-            ToggleMode::SnkPolling => 2,
             ToggleMode::DrpPolling => 1,
+            ToggleMode::SnkPolling => 2,
+            ToggleMode::SrcPolling => 3,
         }
     }
 }
