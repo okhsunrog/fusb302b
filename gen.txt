@@ -3026,100 +3026,28 @@ pub mod field_sets {
         pub const fn new_zero() -> Self {
             Self { bits: [0; 1] }
         }
-        ///Read the `pwr_3_internal_oscillator_enable` field of the register.
+        ///Read the `pwr` field of the register.
         ///
-        ///Enable internal oscillator.
-        pub fn pwr_3_internal_oscillator_enable(&self) -> bool {
+        ///Power control bits (bitwise enables for components).
+        pub fn pwr(&self) -> u8 {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
                     u8,
                     ::device_driver::ops::BE,
-                >(&self.bits, 3, 4)
+                >(&self.bits, 0, 4)
             };
-            raw > 0
+            raw
         }
-        ///Read the `pwr_2_measure_block_power_enable` field of the register.
+        ///Write the `pwr` field of the register.
         ///
-        ///Measure block powered.
-        pub fn pwr_2_measure_block_power_enable(&self) -> bool {
-            let raw = unsafe {
-                ::device_driver::ops::load_lsb0::<
-                    u8,
-                    ::device_driver::ops::BE,
-                >(&self.bits, 2, 3)
-            };
-            raw > 0
-        }
-        ///Read the `pwr_1_receiver_and_measure_refs_enable` field of the register.
-        ///
-        ///Receiver powered and current references for Measure block.
-        pub fn pwr_1_receiver_and_measure_refs_enable(&self) -> bool {
-            let raw = unsafe {
-                ::device_driver::ops::load_lsb0::<
-                    u8,
-                    ::device_driver::ops::BE,
-                >(&self.bits, 1, 2)
-            };
-            raw > 0
-        }
-        ///Read the `pwr_0_bandgap_and_wake_enable` field of the register.
-        ///
-        ///Bandgap and wake circuit.
-        pub fn pwr_0_bandgap_and_wake_enable(&self) -> bool {
-            let raw = unsafe {
-                ::device_driver::ops::load_lsb0::<
-                    u8,
-                    ::device_driver::ops::BE,
-                >(&self.bits, 0, 1)
-            };
-            raw > 0
-        }
-        ///Write the `pwr_3_internal_oscillator_enable` field of the register.
-        ///
-        ///Enable internal oscillator.
-        pub fn set_pwr_3_internal_oscillator_enable(&mut self, value: bool) {
-            let raw = value as _;
+        ///Power control bits (bitwise enables for components).
+        pub fn set_pwr(&mut self, value: u8) {
+            let raw = value;
             unsafe {
                 ::device_driver::ops::store_lsb0::<
                     u8,
                     ::device_driver::ops::BE,
-                >(raw, 3, 4, &mut self.bits)
-            };
-        }
-        ///Write the `pwr_2_measure_block_power_enable` field of the register.
-        ///
-        ///Measure block powered.
-        pub fn set_pwr_2_measure_block_power_enable(&mut self, value: bool) {
-            let raw = value as _;
-            unsafe {
-                ::device_driver::ops::store_lsb0::<
-                    u8,
-                    ::device_driver::ops::BE,
-                >(raw, 2, 3, &mut self.bits)
-            };
-        }
-        ///Write the `pwr_1_receiver_and_measure_refs_enable` field of the register.
-        ///
-        ///Receiver powered and current references for Measure block.
-        pub fn set_pwr_1_receiver_and_measure_refs_enable(&mut self, value: bool) {
-            let raw = value as _;
-            unsafe {
-                ::device_driver::ops::store_lsb0::<
-                    u8,
-                    ::device_driver::ops::BE,
-                >(raw, 1, 2, &mut self.bits)
-            };
-        }
-        ///Write the `pwr_0_bandgap_and_wake_enable` field of the register.
-        ///
-        ///Bandgap and wake circuit.
-        pub fn set_pwr_0_bandgap_and_wake_enable(&mut self, value: bool) {
-            let raw = value as _;
-            unsafe {
-                ::device_driver::ops::store_lsb0::<
-                    u8,
-                    ::device_driver::ops::BE,
-                >(raw, 0, 1, &mut self.bits)
+                >(raw, 0, 4, &mut self.bits)
             };
         }
     }
@@ -3137,28 +3065,7 @@ pub mod field_sets {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Power");
             {
-                d.field(
-                    "pwr_3_internal_oscillator_enable",
-                    &self.pwr_3_internal_oscillator_enable(),
-                );
-            }
-            {
-                d.field(
-                    "pwr_2_measure_block_power_enable",
-                    &self.pwr_2_measure_block_power_enable(),
-                );
-            }
-            {
-                d.field(
-                    "pwr_1_receiver_and_measure_refs_enable",
-                    &self.pwr_1_receiver_and_measure_refs_enable(),
-                );
-            }
-            {
-                d.field(
-                    "pwr_0_bandgap_and_wake_enable",
-                    &self.pwr_0_bandgap_and_wake_enable(),
-                );
+                d.field("pwr", &self.pwr());
             }
             d.finish()
         }
@@ -3167,26 +3074,7 @@ pub mod field_sets {
     impl defmt::Format for Power {
         fn format(&self, f: defmt::Formatter) {
             defmt::write!(f, "Power { ");
-            defmt::write!(
-                f,
-                "pwr_3_internal_oscillator_enable: {=bool}, ",
-                &self.pwr_3_internal_oscillator_enable(),
-            );
-            defmt::write!(
-                f,
-                "pwr_2_measure_block_power_enable: {=bool}, ",
-                &self.pwr_2_measure_block_power_enable(),
-            );
-            defmt::write!(
-                f,
-                "pwr_1_receiver_and_measure_refs_enable: {=bool}, ",
-                &self.pwr_1_receiver_and_measure_refs_enable(),
-            );
-            defmt::write!(
-                f,
-                "pwr_0_bandgap_and_wake_enable: {=bool}, ",
-                &self.pwr_0_bandgap_and_wake_enable(),
-            );
+            defmt::write!(f, "pwr: {=u8}, ", &self.pwr());
             defmt::write!(f, "}");
         }
     }
@@ -6388,20 +6276,20 @@ impl From<TogSavePwr> for u8 {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum ToggleMode {
-    ///DRP polling
-    DrpPolling = 1,
-    ///SNK polling
-    SnkPolling = 2,
     ///SRC polling
     SrcPolling = 3,
+    ///SNK polling
+    SnkPolling = 2,
+    ///DRP polling
+    DrpPolling = 1,
 }
 impl core::convert::TryFrom<u8> for ToggleMode {
     type Error = ::device_driver::ConversionError<u8>;
     fn try_from(val: u8) -> Result<Self, Self::Error> {
         match val {
-            1 => Ok(Self::DrpPolling),
-            2 => Ok(Self::SnkPolling),
             3 => Ok(Self::SrcPolling),
+            2 => Ok(Self::SnkPolling),
+            1 => Ok(Self::DrpPolling),
             val => {
                 Err(::device_driver::ConversionError {
                     source: val,
@@ -6414,9 +6302,9 @@ impl core::convert::TryFrom<u8> for ToggleMode {
 impl From<ToggleMode> for u8 {
     fn from(val: ToggleMode) -> Self {
         match val {
-            ToggleMode::DrpPolling => 1,
-            ToggleMode::SnkPolling => 2,
             ToggleMode::SrcPolling => 3,
+            ToggleMode::SnkPolling => 2,
+            ToggleMode::DrpPolling => 1,
         }
     }
 }
