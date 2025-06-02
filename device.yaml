@@ -8,20 +8,20 @@ DeviceId:
   type: register
   address: 0x01
   size_bits: 8
-  access: RO
+  access: RO # Datasheet: R
   description: "Device Identification Register"
   fields:
     device_id:
       base: uint
       start: 0
-      end: 8
+      end: 8 # Bits 0-7
       description: "Device ID value (e.g., 0x9x for FUSB302B variants)."
 
 Switches0:
   type: register
   address: 0x02
   size_bits: 8
-  access: RW
+  access: RW # Datasheet: R/W
   description: "Switch Control Register 0"
   fields:
     pu_en2:
@@ -61,16 +61,21 @@ Switches1:
   type: register
   address: 0x03
   size_bits: 8
-  access: RW
+  access: RW # Datasheet: R/W
   description: "Switch Control Register 1"
   fields:
     powerrole:
-      base: bool
+      base: uint
       start: 7
-      description: "Power role for GoodCRC packet (true: Source, false: Sink for SOP)."
+      end: 8
+      description: "Power role for GoodCRC packet."
+      conversion:
+        name: PowerRolePort
+        Sink: { value: 0, description: "Sink for SOP" }
+        Source: { value: 1, description: "Source for SOP" }
     specrev:
       base: uint
-      start: 5
+      start: 5 # Bits 5-6
       end: 7
       description: "Specification revision for GoodCRC packet."
       try_conversion:
@@ -78,9 +83,10 @@ Switches1:
         Revision1_0: { value: 0, description: "Revision 1.0" }
         Revision2_0: { value: 1, description: "Revision 2.0" }
     datarole:
-      base: bool
+      base: bool # Could also be an enum conversion
       start: 4
       description: "Data role for GoodCRC packet (true: SRC, false: SNK for SOP)."
+    # Bit 3 is Reserved.
     auto_crc:
       base: bool
       start: 2
@@ -98,16 +104,17 @@ Measure:
   type: register
   address: 0x04
   size_bits: 8
-  access: RW
+  access: RW # Datasheet: R/W
   description: "Measure Control Register"
   fields:
+    # Bit 7 is Reserved.
     meas_vbus:
       base: bool
       start: 6
       description: "Measure VBUS (true: measure VBUS voltage)."
     mdac:
       base: uint
-      start: 0
+      start: 0 # Bits 0-5
       end: 6
       description: "MDAC setting for voltage measurement threshold."
 
@@ -115,12 +122,12 @@ Slice:
   type: register
   address: 0x05
   size_bits: 8
-  access: RW
+  access: RW # Datasheet: R/W
   description: "Slice Control Register"
   fields:
     sdac_hys:
       base: uint
-      start: 6
+      start: 6 # Bits 6-7
       end: 8
       description: "SDAC hysteresis setting."
       conversion:
@@ -131,7 +138,7 @@ Slice:
         Hys255mV: { value: 3, description: "255mV hysteresis" }
     sdac:
       base: uint
-      start: 0
+      start: 0 # Bits 0-5
       end: 6
       description: "SDAC setting for BMC slicer DAC threshold."
 
@@ -139,21 +146,26 @@ Control0:
   type: register
   address: 0x06
   size_bits: 8
-  access: RW
+  access: RW # Datasheet: R/W/C (due to W/C fields)
   description: "Control Register 0"
   fields:
+    # Bit 7 is Reserved.
     tx_flush:
       base: bool
       start: 6
-      description: "Flush transmit FIFO (true: self-clearing flush)."
+      access: WO # Datasheet Field: W/C (Self-clearing)
+      description: "Flush transmit FIFO. Write true to trigger; self-clearing."
     int_mask:
       base: bool
       start: 5
+      # access: RW inherited from register (Datasheet Field: R/W)
       description: "Interrupt mask (true: mask all interrupts)."
+    # Bit 4 is Reserved.
     host_cur:
       base: uint
-      start: 2
+      start: 2 # Bits 2-3
       end: 4
+      # access: RW inherited from register (Datasheet Field: R/W)
       description: "Host current setting for pull-ups."
       conversion:
         name: HostCurrent
@@ -164,19 +176,22 @@ Control0:
     auto_pre:
       base: bool
       start: 1
+      # access: RW inherited from register (Datasheet Field: R/W)
       description: "Auto preamble (true: auto-start transmitter on good CRC)."
     tx_start:
       base: bool
       start: 0
-      description: "Start transmission (true: initiate packet transmission)."
+      access: WO # Datasheet Field: W/C (Self-clearing)
+      description: "Start transmission. Write true to trigger; self-clearing."
 
 Control1:
   type: register
   address: 0x07
   size_bits: 8
-  access: RW
+  access: RW # Datasheet: R/W/C (due to W/C field)
   description: "Control Register 1"
   fields:
+    # Bit 7 is Reserved.
     ensop2db:
       base: bool
       start: 6
@@ -189,10 +204,12 @@ Control1:
       base: bool
       start: 4
       description: "BIST Mode 01s pattern (true: enabled for testing)."
+    # Bit 3 is Reserved.
     rx_flush:
       base: bool
       start: 2
-      description: "Flush receive FIFO (true: self-clearing flush)."
+      access: WO # Datasheet Field: W/C (Self-clearing)
+      description: "Flush receive FIFO. Write true to trigger; self-clearing."
     ensop2:
       base: bool
       start: 1
@@ -206,12 +223,12 @@ Control2:
   type: register
   address: 0x08
   size_bits: 8
-  access: RW
+  access: RW # Datasheet: R/W
   description: "Control Register 2"
   fields:
     tog_save_pwr:
       base: uint
-      start: 6
+      start: 6 # Bits 6-7
       end: 8
       description: "Toggle save power setting."
       conversion:
@@ -224,20 +241,21 @@ Control2:
       base: bool
       start: 5
       description: "Toggle Rd only (true: stop on Rd only)."
+    # Bit 4 is Reserved.
     wake_en:
       base: bool
       start: 3
       description: "Wake detection enable (true: enabled)."
     mode:
       base: uint
-      start: 1
+      start: 1 # Bits 1-2
       end: 3
       description: "Toggle mode selection."
       try_conversion:
         name: ToggleMode
-        SrcPolling: { value: 3, description: "SRC polling" }
-        SnkPolling: { value: 2, description: "SNK polling" }
         DrpPolling: { value: 1, description: "DRP polling" }
+        SnkPolling: { value: 2, description: "SNK polling" }
+        SrcPolling: { value: 3, description: "SRC polling" }
     toggle:
       base: bool
       start: 0
@@ -247,13 +265,15 @@ Control3:
   type: register
   address: 0x09
   size_bits: 8
-  access: RW
+  access: RW # Datasheet: R/W/C (due to W/C field)
   description: "Control Register 3"
   fields:
+    # Bit 7 is Reserved.
     send_hard_reset:
       base: bool
       start: 6
-      description: "Send hard reset (true: initiate, self-clearing)."
+      access: WO # Datasheet Field: W/C (Self-clearing)
+      description: "Send hard reset. Write true to initiate; self-clearing."
     bist_tmode:
       base: bool
       start: 5
@@ -268,7 +288,7 @@ Control3:
       description: "Auto soft reset on retries fail (true: enabled)."
     n_retries:
       base: uint
-      start: 1
+      start: 1 # Bits 1-2
       end: 3
       description: "Number of packet retries."
       conversion:
@@ -286,7 +306,7 @@ Mask:
   type: register
   address: 0x0A
   size_bits: 8
-  access: RW
+  access: RW # Datasheet: R/W
   description: "Interrupt Mask Register"
   fields:
     m_vbusok:
@@ -326,45 +346,59 @@ Power:
   type: register
   address: 0x0B
   size_bits: 8
-  access: RW
+  access: RW # Datasheet: R/W
   description: "Power Control Register"
   fields:
-    pwr:
-      base: uint
+    # Bits 7-4 are Reserved.
+    pwr3_internal_oscillator_enable:
+      base: bool
+      start: 3
+      description: "Enable internal oscillator (PWR[3])."
+    pwr2_measure_block_power_enable:
+      base: bool
+      start: 2
+      description: "Measure block powered (PWR[2])."
+    pwr1_receiver_and_measure_refs_enable:
+      base: bool
+      start: 1
+      description: "Receiver powered and current references for Measure block (PWR[1])."
+    pwr0_bandgap_and_wake_enable:
+      base: bool
       start: 0
-      end: 4
-      description: "Power control bits (bitwise enables for components)."
+      description: "Bandgap and wake circuit enabled (PWR[0])."
 
 Reset:
   type: register
   address: 0x0C
   size_bits: 8
-  access: WO
+  access: WO # Datasheet: W/C (Fields are self-clearing triggers)
   description: "Reset Control Register"
   fields:
+    # Bits 7-2 are Reserved.
     pd_reset:
       base: bool
       start: 1
-      description: "Reset PD logic (true: reset, self-clearing)."
+      description: "Reset PD logic. Write true to reset; self-clearing."
     sw_res:
       base: bool
       start: 0
-      description: "Software reset (true: reset entire device, self-clearing)."
+      description: "Software reset. Write true to reset entire device; self-clearing."
 
 Ocpreg:
   type: register
   address: 0x0D
   size_bits: 8
-  access: RW
+  access: RW # Datasheet: R/W
   description: "Over-Current Protection Register"
   fields:
+    # Bits 7-4 are Reserved.
     ocp_range:
       base: bool
       start: 3
       description: "OCP range (true: 100-800mA, false: 10-80mA)."
     ocp_cur:
       base: uint
-      start: 0
+      start: 0 # Bits 0-2
       end: 3
       description: "OCP current setting (fraction of max range)."
 
@@ -372,7 +406,7 @@ Maska:
   type: register
   address: 0x0E
   size_bits: 8
-  access: RW
+  access: RW # Datasheet: R/W
   description: "Interrupt Mask Register A"
   fields:
     m_ocp_temp:
@@ -412,9 +446,10 @@ Maskb:
   type: register
   address: 0x0F
   size_bits: 8
-  access: RW
+  access: RW # Datasheet: R/W
   description: "Interrupt Mask Register B"
   fields:
+    # Bits 7-1 are Reserved.
     m_gcrcsent:
       base: bool
       start: 0
@@ -424,9 +459,10 @@ Control4:
   type: register
   address: 0x10
   size_bits: 8
-  access: RW
+  access: RW # Datasheet: R/W
   description: "Control Register 4"
   fields:
+    # Bits 7-1 are Reserved.
     tog_exit_aud:
       base: bool
       start: 0
@@ -436,9 +472,10 @@ Status0a:
   type: register
   address: 0x3C
   size_bits: 8
-  access: RO
+  access: RO # Datasheet: R
   description: "Status Register 0A"
   fields:
+    # Bits 7-6 are Reserved.
     softfail:
       base: bool
       start: 5
@@ -449,9 +486,9 @@ Status0a:
       description: "Packet retries failed (true: failed)."
     power:
       base: uint
-      start: 2
+      start: 2 # Bits 2-3
       end: 4
-      description: "Internal power state bits."
+      description: "Internal power state bits (POWER3, POWER2)."
     softrst:
       base: bool
       start: 1
@@ -465,22 +502,24 @@ Status1a:
   type: register
   address: 0x3D
   size_bits: 8
-  access: RO
+  access: RO # Datasheet: R
   description: "Status Register 1A"
   fields:
+    # Bits 7-6 are Reserved.
     togss:
       base: uint
-      start: 3
+      start: 3 # Bits 3-5
       end: 6
       description: "Toggle state status."
       try_conversion:
         name: ToggleState
-        Running: { value: 0, description: "Toggle logic running" }
-        SrcCC1: { value: 1, description: "Settled to SRC on CC1" }
-        SrcCC2: { value: 2, description: "Settled to SRC on CC2" }
-        SnkCC1: { value: 5, description: "Settled to SNK on CC1" }
-        SnkCC2: { value: 6, description: "Settled to SNK on CC2" }
-        AudioAccessory: { value: 7, description: "Audio accessory detected" }
+        Running: { value: 0b000, description: "Toggle logic running" }
+        SrcCC1: { value: 0b001, description: "Settled to SRC on CC1" }
+        SrcCC2: { value: 0b010, description: "Settled to SRC on CC2" }
+        SnkCC1: { value: 0b101, description: "Settled to SNK on CC1" }
+        SnkCC2: { value: 0b110, description: "Settled to SNK on CC2" }
+        AudioAccessory:
+          { value: 0b111, description: "Audio accessory detected" }
     rxsop2db:
       base: bool
       start: 2
@@ -498,59 +537,60 @@ Interrupta:
   type: register
   address: 0x3E
   size_bits: 8
-  access: RW
-  description: "Interrupt Register A (read/clear)"
+  access: RW # Datasheet: R/C (Read status, Write 1 to specific bit to clear)
+  description: "Interrupt Register A. Read to get status, write 1 to corresponding bit to clear."
   fields:
     i_ocp_temp:
       base: bool
       start: 7
-      description: "OCP or over-temp interrupt (true: occurred)."
+      description: "OCP or over-temp interrupt (true: occurred). Write 1 to clear this flag."
     i_togdone:
       base: bool
       start: 6
-      description: "Toggle done interrupt (true: occurred)."
+      description: "Toggle done interrupt (true: occurred). Write 1 to clear this flag."
     i_softfail:
       base: bool
       start: 5
-      description: "Soft reset fail interrupt (true: occurred)."
+      description: "Soft reset fail interrupt (true: occurred). Write 1 to clear this flag."
     i_retryfail:
       base: bool
       start: 4
-      description: "Retry fail interrupt (true: occurred)."
+      description: "Retry fail interrupt (true: occurred). Write 1 to clear this flag."
     i_hardsent:
       base: bool
       start: 3
-      description: "Hard reset sent interrupt (true: occurred)."
+      description: "Hard reset sent interrupt (true: occurred). Write 1 to clear this flag."
     i_txsent:
       base: bool
       start: 2
-      description: "Packet sent interrupt (true: occurred)."
+      description: "Packet sent interrupt (true: occurred). Write 1 to clear this flag."
     i_softrst:
       base: bool
       start: 1
-      description: "Soft reset received interrupt (true: occurred)."
+      description: "Soft reset received interrupt (true: occurred). Write 1 to clear this flag."
     i_hardrst:
       base: bool
       start: 0
-      description: "Hard reset received interrupt (true: occurred)."
+      description: "Hard reset received interrupt (true: occurred). Write 1 to clear this flag."
 
 Interruptb:
   type: register
   address: 0x3F
   size_bits: 8
-  access: RW
-  description: "Interrupt Register B (read/clear)"
+  access: RW # Datasheet: R/C (Read status, Write 1 to specific bit to clear)
+  description: "Interrupt Register B. Read to get status, write 1 to corresponding bit to clear."
   fields:
+    # Bits 7-1 are Reserved.
     i_gcrcsent:
       base: bool
       start: 0
-      description: "GoodCRC sent interrupt (true: occurred)."
+      description: "GoodCRC sent interrupt (true: occurred). Write 1 to clear this flag."
 
 Status0:
   type: register
   address: 0x40
   size_bits: 8
-  access: RO
+  access: RO # Datasheet: R
   description: "Status Register 0"
   fields:
     vbusok:
@@ -579,21 +619,21 @@ Status0:
       description: "Wake detected (true: device attempting attach)."
     bc_lvl:
       base: uint
-      start: 0
+      start: 0 # Bits 0-1
       end: 2
-      description: "Battery charge level on CC."
+      description: "Current voltage status of the measured CC pin interpreted as host current levels."
       conversion:
         name: BcLvl
-        LessThan200mV: { value: 0, description: "<200mV" }
-        Between200And660mV: { value: 1, description: ">200mV, <660mV" }
-        Between660And1230mV: { value: 2, description: ">660mV, <1.23V" }
-        GreaterThan1230mV: { value: 3, description: ">1.23V" }
+        LessThan200mV: { value: 0b00, description: "<200mV" }
+        Between200And660mV: { value: 0b01, description: ">200mV, <660mV" }
+        Between660And1230mV: { value: 0b10, description: ">660mV, <1.23V" }
+        GreaterThan1230mV: { value: 0b11, description: ">1.23V" }
 
 Status1:
   type: register
   address: 0x41
   size_bits: 8
-  access: RO
+  access: RO # Datasheet: R
   description: "Status Register 1"
   fields:
     rxsop2:
@@ -633,44 +673,44 @@ Interrupt:
   type: register
   address: 0x42
   size_bits: 8
-  access: RW
-  description: "Interrupt Status Register (read/clear)"
+  access: RW # Datasheet: R/C (Read status, Write 1 to specific bit to clear)
+  description: "Interrupt Status Register. Read to get status, write 1 to corresponding bit to clear."
   fields:
     i_vbusok:
       base: bool
       start: 7
-      description: "VBUSOK interrupt (true: VBUS transitioned)."
+      description: "VBUSOK interrupt (true: VBUS transitioned). Write 1 to clear this flag."
     i_activity:
       base: bool
       start: 6
-      description: "Activity interrupt (true: CC activity change)."
+      description: "Activity interrupt (true: CC activity change). Write 1 to clear this flag."
     i_comp_chng:
       base: bool
       start: 5
-      description: "Comparator change interrupt (true: occurred)."
+      description: "Comparator change interrupt (true: occurred). Write 1 to clear this flag."
     i_crc_chk:
       base: bool
       start: 4
-      description: "CRC check interrupt (true: packet validated)."
+      description: "CRC check interrupt (true: packet validated). Write 1 to clear this flag."
     i_alert:
       base: bool
       start: 3
-      description: "Alert interrupt (true: error condition)."
+      description: "Alert interrupt (true: error condition). Write 1 to clear this flag."
     i_wake:
       base: bool
       start: 2
-      description: "Wake interrupt (true: device attach attempt)."
+      description: "Wake interrupt (true: device attach attempt). Write 1 to clear this flag."
     i_collision:
       base: bool
       start: 1
-      description: "Collision interrupt (true: transmit attempted during activity)."
+      description: "Collision interrupt (true: transmit attempted during activity). Write 1 to clear this flag."
     i_bc_lvl:
       base: bool
       start: 0
-      description: "BC_LVL interrupt (true: current level changed)."
+      description: "BC_LVL interrupt (true: current level changed). Write 1 to clear this flag."
 
 Fifo:
   type: buffer
   address: 0x43
-  access: RW
+  access: RW # Datasheet implies R/W for FIFO interaction.
   description: "FIFO buffer for USB PD communication (write to Tx, read from Rx)."
