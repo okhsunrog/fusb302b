@@ -23,7 +23,7 @@ defmt = { version = "1.0", optional = true } # Or your specific version
 embassy-time = "0.4"
 # usb-pd = { git = "https://github.com/okhsunrog/usb-pd-rs" }
 usbpd-traits = "1.0.0"
-device-driver = { git = "https://github.com/diondokter/device-driver", rev = "aa0cf57270970e620337d90145992d08e8d4d0cb", default-features = false, features = ["yaml"] }
+device-driver = { git = "https://github.com/diondokter/device-driver", rev = "97040c43f1b5b345d1d8dd1ac725c6410a4fea0e", default-features = false, features = ["yaml"] }
 # thiserror = { version = "2.0.12", default-features = false }
 
 [features]
