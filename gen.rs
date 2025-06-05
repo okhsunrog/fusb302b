@@ -1524,7 +1524,7 @@ pub mod field_sets {
     impl Slice {
         /// Create a new instance, loaded with the reset value (if any)
         pub const fn new() -> Self {
-            Self { bits: [0] }
+            Self { bits: [96] }
         }
         /// Create a new instance, loaded with all zeroes
         pub const fn new_zero() -> Self {
@@ -1533,7 +1533,7 @@ pub mod field_sets {
         ///Read the `sdac_hys` field of the register.
         ///
         ///SDAC hysteresis setting.
-        pub fn sdac_hys(&self) -> super::SdacHys {
+        pub fn sdac_hys(&self) -> super::SlicerHysteresis {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
                     u8,
@@ -1557,7 +1557,7 @@ pub mod field_sets {
         ///Write the `sdac_hys` field of the register.
         ///
         ///SDAC hysteresis setting.
-        pub fn set_sdac_hys(&mut self, value: super::SdacHys) {
+        pub fn set_sdac_hys(&mut self, value: super::SlicerHysteresis) {
             let raw = value.into();
             unsafe {
                 ::device_driver::ops::store_lsb0::<
@@ -1678,7 +1678,7 @@ pub mod field_sets {
     impl Control0 {
         /// Create a new instance, loaded with the reset value (if any)
         pub const fn new() -> Self {
-            Self { bits: [0] }
+            Self { bits: [36] }
         }
         /// Create a new instance, loaded with all zeroes
         pub const fn new_zero() -> Self {
@@ -6191,7 +6191,7 @@ impl From<SpecRev> for u8 {
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum SdacHys {
+pub enum SlicerHysteresis {
     ///No hysteresis
     NoHysteresis = 0,
     ///85mV hysteresis
@@ -6201,7 +6201,7 @@ pub enum SdacHys {
     ///255mV hysteresis
     Hys255MV = 3,
 }
-impl core::convert::TryFrom<u8> for SdacHys {
+impl core::convert::TryFrom<u8> for SlicerHysteresis {
     type Error = ::device_driver::ConversionError<u8>;
     fn try_from(val: u8) -> Result<Self, Self::Error> {
         match val {
@@ -6212,19 +6212,19 @@ impl core::convert::TryFrom<u8> for SdacHys {
             val => {
                 Err(::device_driver::ConversionError {
                     source: val,
-                    target: "SdacHys",
+                    target: "SlicerHysteresis",
                 })
             }
         }
     }
 }
-impl From<SdacHys> for u8 {
-    fn from(val: SdacHys) -> Self {
+impl From<SlicerHysteresis> for u8 {
+    fn from(val: SlicerHysteresis) -> Self {
         match val {
-            SdacHys::NoHysteresis => 0,
-            SdacHys::Hys85MV => 1,
-            SdacHys::Hys170MV => 2,
-            SdacHys::Hys255MV => 3,
+            SlicerHysteresis::NoHysteresis => 0,
+            SlicerHysteresis::Hys85MV => 1,
+            SlicerHysteresis::Hys170MV => 2,
+            SlicerHysteresis::Hys255MV => 3,
         }
     }
 }

@@ -167,6 +167,7 @@ Slice:
   address: 0x05
   size_bits: 8
   access: RW # Datasheet: R/W
+  reset_value: 0b01100000
   description: "Slice Control Register"
   fields:
     sdac_hys:
@@ -175,9 +176,9 @@ Slice:
       end: 8
       description: "SDAC hysteresis setting."
       conversion:
-        name: SdacHys
+        name: SlicerHysteresis
         NoHysteresis: { value: 0, description: "No hysteresis" }
-        Hys85mV: { value: 1, description: "85mV hysteresis" }
+        Hys85mV: { value: 1, description: "85mV hysteresis" } # Default
         Hys170mV: { value: 2, description: "170mV hysteresis" }
         Hys255mV: { value: 3, description: "255mV hysteresis" }
     sdac:
@@ -191,6 +192,7 @@ Control0:
   address: 0x06
   size_bits: 8
   access: RW # Datasheet: R/W/C (due to W/C fields)
+  reset_value: 0b00100100
   description: "Control Register 0"
   fields:
     # Bit 7 is Reserved.
@@ -233,6 +235,7 @@ Control1:
   address: 0x07
   size_bits: 8
   access: RW # Datasheet: R/W/C (due to W/C field)
+  reset_value: 0b00000000
   description: "Control Register 1"
   fields:
     # Bit 7 is Reserved.
