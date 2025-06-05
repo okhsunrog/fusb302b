@@ -146,7 +146,7 @@ impl<I> Device<I> {
         callback(66 + 0 * 0, "interrupt", reg.into());
         Ok(())
     }
-    ///Device Identification Register
+    ///Device Identification Register. Contains Version, Product, and Revision IDs.
     pub fn device_id(
         &mut self,
     ) -> ::device_driver::RegisterOperation<
@@ -599,7 +599,7 @@ impl<I> Device<I> {
 /// Module containing the generated fieldsets of the registers and commands
 pub mod field_sets {
     use super::*;
-    ///Device Identification Register
+    ///Device Identification Register. Contains Version, Product, and Revision IDs.
     #[derive(Copy, Clone, Eq, PartialEq)]
     pub struct DeviceId {
         /// The internal bits
@@ -626,28 +626,76 @@ pub mod field_sets {
         pub const fn new_zero() -> Self {
             Self { bits: [0; 1] }
         }
-        ///Read the `device_id` field of the register.
+        ///Read the `version_id` field of the register.
         ///
-        ///Device ID value (e.g., 0x9x for FUSB302B variants).
-        pub fn device_id(&self) -> u8 {
+        ///Device Version ID. Corresponds to major hardware revisions. See Table 17.
+        pub fn version_id(&self) -> super::Fusb302Version {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
                     u8,
                     ::device_driver::ops::BE,
-                >(&self.bits, 0, 8)
+                >(&self.bits, 4, 8)
             };
-            raw
+            unsafe { raw.try_into().unwrap_unchecked() }
         }
-        ///Write the `device_id` field of the register.
+        ///Read the `product_id` field of the register.
         ///
-        ///Device ID value (e.g., 0x9x for FUSB302B variants).
-        pub fn set_device_id(&mut self, value: u8) {
-            let raw = value;
+        ///Product ID, distinguishing different FUSB302B variants/packages. See Table 17.
+        pub fn product_id(&self) -> super::Fusb302Product {
+            let raw = unsafe {
+                ::device_driver::ops::load_lsb0::<
+                    u8,
+                    ::device_driver::ops::BE,
+                >(&self.bits, 2, 4)
+            };
+            unsafe { raw.try_into().unwrap_unchecked() }
+        }
+        ///Read the `revision_id` field of the register.
+        ///
+        ///Revision ID, indicating minor revision for the given hardware Version. See Table 17.
+        pub fn revision_id(&self) -> super::Fusb302Revision {
+            let raw = unsafe {
+                ::device_driver::ops::load_lsb0::<
+                    u8,
+                    ::device_driver::ops::BE,
+                >(&self.bits, 0, 2)
+            };
+            unsafe { raw.try_into().unwrap_unchecked() }
+        }
+        ///Write the `version_id` field of the register.
+        ///
+        ///Device Version ID. Corresponds to major hardware revisions. See Table 17.
+        pub fn set_version_id(&mut self, value: super::Fusb302Version) {
+            let raw = value.into();
             unsafe {
                 ::device_driver::ops::store_lsb0::<
                     u8,
                     ::device_driver::ops::BE,
-                >(raw, 0, 8, &mut self.bits)
+                >(raw, 4, 8, &mut self.bits)
+            };
+        }
+        ///Write the `product_id` field of the register.
+        ///
+        ///Product ID, distinguishing different FUSB302B variants/packages. See Table 17.
+        pub fn set_product_id(&mut self, value: super::Fusb302Product) {
+            let raw = value.into();
+            unsafe {
+                ::device_driver::ops::store_lsb0::<
+                    u8,
+                    ::device_driver::ops::BE,
+                >(raw, 2, 4, &mut self.bits)
+            };
+        }
+        ///Write the `revision_id` field of the register.
+        ///
+        ///Revision ID, indicating minor revision for the given hardware Version. See Table 17.
+        pub fn set_revision_id(&mut self, value: super::Fusb302Revision) {
+            let raw = value.into();
+            unsafe {
+                ::device_driver::ops::store_lsb0::<
+                    u8,
+                    ::device_driver::ops::BE,
+                >(raw, 0, 2, &mut self.bits)
             };
         }
     }
@@ -664,18 +712,20 @@ pub mod field_sets {
     impl core::fmt::Debug for DeviceId {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("DeviceId");
-            {
-                d.field("device_id", &self.device_id());
-            }
+            d.field("version_id", &self.version_id());
+            d.field("product_id", &self.product_id());
+            d.field("revision_id", &self.revision_id());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for DeviceId {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "DeviceId { ");
-            defmt::write!(f, "device_id: {=u8}, ", &self.device_id());
-            defmt::write!(f, "}");
+            defmt::write!(f, "DeviceId {{ ");
+            defmt::write!(f, "version_id: {}, ", &self.version_id());
+            defmt::write!(f, "product_id: {}, ", &self.product_id());
+            defmt::write!(f, "revision_id: {}, ", &self.revision_id());
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for DeviceId {
@@ -962,37 +1012,21 @@ pub mod field_sets {
     impl core::fmt::Debug for Switches0 {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Switches0");
-            {
-                d.field("pu_en_2", &self.pu_en_2());
-            }
-            {
-                d.field("pu_en_1", &self.pu_en_1());
-            }
-            {
-                d.field("vconn_cc_2", &self.vconn_cc_2());
-            }
-            {
-                d.field("vconn_cc_1", &self.vconn_cc_1());
-            }
-            {
-                d.field("meas_cc_2", &self.meas_cc_2());
-            }
-            {
-                d.field("meas_cc_1", &self.meas_cc_1());
-            }
-            {
-                d.field("pdwn_2", &self.pdwn_2());
-            }
-            {
-                d.field("pdwn_1", &self.pdwn_1());
-            }
+            d.field("pu_en_2", &self.pu_en_2());
+            d.field("pu_en_1", &self.pu_en_1());
+            d.field("vconn_cc_2", &self.vconn_cc_2());
+            d.field("vconn_cc_1", &self.vconn_cc_1());
+            d.field("meas_cc_2", &self.meas_cc_2());
+            d.field("meas_cc_1", &self.meas_cc_1());
+            d.field("pdwn_2", &self.pdwn_2());
+            d.field("pdwn_1", &self.pdwn_1());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Switches0 {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Switches0 { ");
+            defmt::write!(f, "Switches0 {{ ");
             defmt::write!(f, "pu_en_2: {=bool}, ", &self.pu_en_2());
             defmt::write!(f, "pu_en_1: {=bool}, ", &self.pu_en_1());
             defmt::write!(f, "vconn_cc_2: {=bool}, ", &self.vconn_cc_2());
@@ -1001,7 +1035,7 @@ pub mod field_sets {
             defmt::write!(f, "meas_cc_1: {=bool}, ", &self.meas_cc_1());
             defmt::write!(f, "pdwn_2: {=bool}, ", &self.pdwn_2());
             defmt::write!(f, "pdwn_1: {=bool}, ", &self.pdwn_1());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Switches0 {
@@ -1242,38 +1276,26 @@ pub mod field_sets {
     impl core::fmt::Debug for Switches1 {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Switches1");
-            {
-                d.field("powerrole", &self.powerrole());
-            }
-            {
-                d.field("specrev", &self.specrev());
-            }
-            {
-                d.field("datarole", &self.datarole());
-            }
-            {
-                d.field("auto_crc", &self.auto_crc());
-            }
-            {
-                d.field("txcc_2", &self.txcc_2());
-            }
-            {
-                d.field("txcc_1", &self.txcc_1());
-            }
+            d.field("powerrole", &self.powerrole());
+            d.field("specrev", &self.specrev());
+            d.field("datarole", &self.datarole());
+            d.field("auto_crc", &self.auto_crc());
+            d.field("txcc_2", &self.txcc_2());
+            d.field("txcc_1", &self.txcc_1());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Switches1 {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Switches1 { ");
+            defmt::write!(f, "Switches1 {{ ");
             defmt::write!(f, "powerrole: {}, ", &self.powerrole());
             defmt::write!(f, "specrev: {}, ", &self.specrev());
             defmt::write!(f, "datarole: {=bool}, ", &self.datarole());
             defmt::write!(f, "auto_crc: {=bool}, ", &self.auto_crc());
             defmt::write!(f, "txcc_2: {=bool}, ", &self.txcc_2());
             defmt::write!(f, "txcc_1: {=bool}, ", &self.txcc_1());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Switches1 {
@@ -1416,22 +1438,18 @@ pub mod field_sets {
     impl core::fmt::Debug for Measure {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Measure");
-            {
-                d.field("meas_vbus", &self.meas_vbus());
-            }
-            {
-                d.field("mdac", &self.mdac());
-            }
+            d.field("meas_vbus", &self.meas_vbus());
+            d.field("mdac", &self.mdac());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Measure {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Measure { ");
+            defmt::write!(f, "Measure {{ ");
             defmt::write!(f, "meas_vbus: {=bool}, ", &self.meas_vbus());
             defmt::write!(f, "mdac: {=u8}, ", &self.mdac());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Measure {
@@ -1574,22 +1592,18 @@ pub mod field_sets {
     impl core::fmt::Debug for Slice {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Slice");
-            {
-                d.field("sdac_hys", &self.sdac_hys());
-            }
-            {
-                d.field("sdac", &self.sdac());
-            }
+            d.field("sdac_hys", &self.sdac_hys());
+            d.field("sdac", &self.sdac());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Slice {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Slice { ");
+            defmt::write!(f, "Slice {{ ");
             defmt::write!(f, "sdac_hys: {}, ", &self.sdac_hys());
             defmt::write!(f, "sdac: {=u8}, ", &self.sdac());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Slice {
@@ -1780,34 +1794,20 @@ pub mod field_sets {
     impl core::fmt::Debug for Control0 {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Control0");
-            {
-                d.field("tx_flush", &self.tx_flush());
-            }
-            {
-                d.field("int_mask", &self.int_mask());
-            }
-            {
-                d.field("host_cur", &self.host_cur());
-            }
-            {
-                d.field("auto_pre", &self.auto_pre());
-            }
-            {
-                d.field("tx_start", &self.tx_start());
-            }
+            d.field("int_mask", &self.int_mask());
+            d.field("host_cur", &self.host_cur());
+            d.field("auto_pre", &self.auto_pre());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Control0 {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Control0 { ");
-            defmt::write!(f, "tx_flush: {=bool}, ", &self.tx_flush());
+            defmt::write!(f, "Control0 {{ ");
             defmt::write!(f, "int_mask: {=bool}, ", &self.int_mask());
             defmt::write!(f, "host_cur: {}, ", &self.host_cur());
             defmt::write!(f, "auto_pre: {=bool}, ", &self.auto_pre());
-            defmt::write!(f, "tx_start: {=bool}, ", &self.tx_start());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Control0 {
@@ -2034,38 +2034,24 @@ pub mod field_sets {
     impl core::fmt::Debug for Control1 {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Control1");
-            {
-                d.field("ensop_2_db", &self.ensop_2_db());
-            }
-            {
-                d.field("ensop_1_db", &self.ensop_1_db());
-            }
-            {
-                d.field("bist_mode_2", &self.bist_mode_2());
-            }
-            {
-                d.field("rx_flush", &self.rx_flush());
-            }
-            {
-                d.field("ensop_2", &self.ensop_2());
-            }
-            {
-                d.field("ensop_1", &self.ensop_1());
-            }
+            d.field("ensop_2_db", &self.ensop_2_db());
+            d.field("ensop_1_db", &self.ensop_1_db());
+            d.field("bist_mode_2", &self.bist_mode_2());
+            d.field("ensop_2", &self.ensop_2());
+            d.field("ensop_1", &self.ensop_1());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Control1 {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Control1 { ");
+            defmt::write!(f, "Control1 {{ ");
             defmt::write!(f, "ensop_2_db: {=bool}, ", &self.ensop_2_db());
             defmt::write!(f, "ensop_1_db: {=bool}, ", &self.ensop_1_db());
             defmt::write!(f, "bist_mode_2: {=bool}, ", &self.bist_mode_2());
-            defmt::write!(f, "rx_flush: {=bool}, ", &self.rx_flush());
             defmt::write!(f, "ensop_2: {=bool}, ", &self.ensop_2());
             defmt::write!(f, "ensop_1: {=bool}, ", &self.ensop_1());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Control1 {
@@ -2282,34 +2268,24 @@ pub mod field_sets {
     impl core::fmt::Debug for Control2 {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Control2");
-            {
-                d.field("tog_save_pwr", &self.tog_save_pwr());
-            }
-            {
-                d.field("tog_rd_only", &self.tog_rd_only());
-            }
-            {
-                d.field("wake_en", &self.wake_en());
-            }
-            {
-                d.field("mode", &self.mode());
-            }
-            {
-                d.field("toggle", &self.toggle());
-            }
+            d.field("tog_save_pwr", &self.tog_save_pwr());
+            d.field("tog_rd_only", &self.tog_rd_only());
+            d.field("wake_en", &self.wake_en());
+            d.field("mode", &self.mode());
+            d.field("toggle", &self.toggle());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Control2 {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Control2 { ");
+            defmt::write!(f, "Control2 {{ ");
             defmt::write!(f, "tog_save_pwr: {}, ", &self.tog_save_pwr());
             defmt::write!(f, "tog_rd_only: {=bool}, ", &self.tog_rd_only());
             defmt::write!(f, "wake_en: {=bool}, ", &self.wake_en());
             defmt::write!(f, "mode: {}, ", &self.mode());
             defmt::write!(f, "toggle: {=bool}, ", &self.toggle());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Control2 {
@@ -2536,38 +2512,24 @@ pub mod field_sets {
     impl core::fmt::Debug for Control3 {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Control3");
-            {
-                d.field("send_hard_reset", &self.send_hard_reset());
-            }
-            {
-                d.field("bist_tmode", &self.bist_tmode());
-            }
-            {
-                d.field("auto_hardreset", &self.auto_hardreset());
-            }
-            {
-                d.field("auto_softreset", &self.auto_softreset());
-            }
-            {
-                d.field("n_retries", &self.n_retries());
-            }
-            {
-                d.field("auto_retry", &self.auto_retry());
-            }
+            d.field("bist_tmode", &self.bist_tmode());
+            d.field("auto_hardreset", &self.auto_hardreset());
+            d.field("auto_softreset", &self.auto_softreset());
+            d.field("n_retries", &self.n_retries());
+            d.field("auto_retry", &self.auto_retry());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Control3 {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Control3 { ");
-            defmt::write!(f, "send_hard_reset: {=bool}, ", &self.send_hard_reset());
+            defmt::write!(f, "Control3 {{ ");
             defmt::write!(f, "bist_tmode: {=bool}, ", &self.bist_tmode());
             defmt::write!(f, "auto_hardreset: {=bool}, ", &self.auto_hardreset());
             defmt::write!(f, "auto_softreset: {=bool}, ", &self.auto_softreset());
             defmt::write!(f, "n_retries: {}, ", &self.n_retries());
             defmt::write!(f, "auto_retry: {=bool}, ", &self.auto_retry());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Control3 {
@@ -2854,37 +2816,21 @@ pub mod field_sets {
     impl core::fmt::Debug for Mask {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Mask");
-            {
-                d.field("m_vbusok", &self.m_vbusok());
-            }
-            {
-                d.field("m_activity", &self.m_activity());
-            }
-            {
-                d.field("m_comp_chng", &self.m_comp_chng());
-            }
-            {
-                d.field("m_crc_chk", &self.m_crc_chk());
-            }
-            {
-                d.field("m_alert", &self.m_alert());
-            }
-            {
-                d.field("m_wake", &self.m_wake());
-            }
-            {
-                d.field("m_collision", &self.m_collision());
-            }
-            {
-                d.field("m_bc_lvl", &self.m_bc_lvl());
-            }
+            d.field("m_vbusok", &self.m_vbusok());
+            d.field("m_activity", &self.m_activity());
+            d.field("m_comp_chng", &self.m_comp_chng());
+            d.field("m_crc_chk", &self.m_crc_chk());
+            d.field("m_alert", &self.m_alert());
+            d.field("m_wake", &self.m_wake());
+            d.field("m_collision", &self.m_collision());
+            d.field("m_bc_lvl", &self.m_bc_lvl());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Mask {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Mask { ");
+            defmt::write!(f, "Mask {{ ");
             defmt::write!(f, "m_vbusok: {=bool}, ", &self.m_vbusok());
             defmt::write!(f, "m_activity: {=bool}, ", &self.m_activity());
             defmt::write!(f, "m_comp_chng: {=bool}, ", &self.m_comp_chng());
@@ -2893,7 +2839,7 @@ pub mod field_sets {
             defmt::write!(f, "m_wake: {=bool}, ", &self.m_wake());
             defmt::write!(f, "m_collision: {=bool}, ", &self.m_collision());
             defmt::write!(f, "m_bc_lvl: {=bool}, ", &self.m_bc_lvl());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Mask {
@@ -3084,37 +3030,29 @@ pub mod field_sets {
     impl core::fmt::Debug for Power {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Power");
-            {
-                d.field(
-                    "pwr_3_internal_oscillator_enable",
-                    &self.pwr_3_internal_oscillator_enable(),
-                );
-            }
-            {
-                d.field(
-                    "pwr_2_measure_block_power_enable",
-                    &self.pwr_2_measure_block_power_enable(),
-                );
-            }
-            {
-                d.field(
-                    "pwr_1_receiver_and_measure_refs_enable",
-                    &self.pwr_1_receiver_and_measure_refs_enable(),
-                );
-            }
-            {
-                d.field(
-                    "pwr_0_bandgap_and_wake_enable",
-                    &self.pwr_0_bandgap_and_wake_enable(),
-                );
-            }
+            d.field(
+                "pwr_3_internal_oscillator_enable",
+                &self.pwr_3_internal_oscillator_enable(),
+            );
+            d.field(
+                "pwr_2_measure_block_power_enable",
+                &self.pwr_2_measure_block_power_enable(),
+            );
+            d.field(
+                "pwr_1_receiver_and_measure_refs_enable",
+                &self.pwr_1_receiver_and_measure_refs_enable(),
+            );
+            d.field(
+                "pwr_0_bandgap_and_wake_enable",
+                &self.pwr_0_bandgap_and_wake_enable(),
+            );
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Power {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Power { ");
+            defmt::write!(f, "Power {{ ");
             defmt::write!(
                 f,
                 "pwr_3_internal_oscillator_enable: {=bool}, ",
@@ -3135,7 +3073,7 @@ pub mod field_sets {
                 "pwr_0_bandgap_and_wake_enable: {=bool}, ",
                 &self.pwr_0_bandgap_and_wake_enable(),
             );
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Power {
@@ -3278,22 +3216,18 @@ pub mod field_sets {
     impl core::fmt::Debug for Reset {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Reset");
-            {
-                d.field("pd_reset", &self.pd_reset());
-            }
-            {
-                d.field("sw_res", &self.sw_res());
-            }
+            d.field("pd_reset", &self.pd_reset());
+            d.field("sw_res", &self.sw_res());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Reset {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Reset { ");
+            defmt::write!(f, "Reset {{ ");
             defmt::write!(f, "pd_reset: {=bool}, ", &self.pd_reset());
             defmt::write!(f, "sw_res: {=bool}, ", &self.sw_res());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Reset {
@@ -3436,22 +3370,18 @@ pub mod field_sets {
     impl core::fmt::Debug for Ocpreg {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Ocpreg");
-            {
-                d.field("ocp_range", &self.ocp_range());
-            }
-            {
-                d.field("ocp_cur", &self.ocp_cur());
-            }
+            d.field("ocp_range", &self.ocp_range());
+            d.field("ocp_cur", &self.ocp_cur());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Ocpreg {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Ocpreg { ");
+            defmt::write!(f, "Ocpreg {{ ");
             defmt::write!(f, "ocp_range: {=bool}, ", &self.ocp_range());
             defmt::write!(f, "ocp_cur: {=u8}, ", &self.ocp_cur());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Ocpreg {
@@ -3738,37 +3668,21 @@ pub mod field_sets {
     impl core::fmt::Debug for Maska {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Maska");
-            {
-                d.field("m_ocp_temp", &self.m_ocp_temp());
-            }
-            {
-                d.field("m_togdone", &self.m_togdone());
-            }
-            {
-                d.field("m_softfail", &self.m_softfail());
-            }
-            {
-                d.field("m_retryfail", &self.m_retryfail());
-            }
-            {
-                d.field("m_hardsent", &self.m_hardsent());
-            }
-            {
-                d.field("m_txsent", &self.m_txsent());
-            }
-            {
-                d.field("m_softrst", &self.m_softrst());
-            }
-            {
-                d.field("m_hardrst", &self.m_hardrst());
-            }
+            d.field("m_ocp_temp", &self.m_ocp_temp());
+            d.field("m_togdone", &self.m_togdone());
+            d.field("m_softfail", &self.m_softfail());
+            d.field("m_retryfail", &self.m_retryfail());
+            d.field("m_hardsent", &self.m_hardsent());
+            d.field("m_txsent", &self.m_txsent());
+            d.field("m_softrst", &self.m_softrst());
+            d.field("m_hardrst", &self.m_hardrst());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Maska {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Maska { ");
+            defmt::write!(f, "Maska {{ ");
             defmt::write!(f, "m_ocp_temp: {=bool}, ", &self.m_ocp_temp());
             defmt::write!(f, "m_togdone: {=bool}, ", &self.m_togdone());
             defmt::write!(f, "m_softfail: {=bool}, ", &self.m_softfail());
@@ -3777,7 +3691,7 @@ pub mod field_sets {
             defmt::write!(f, "m_txsent: {=bool}, ", &self.m_txsent());
             defmt::write!(f, "m_softrst: {=bool}, ", &self.m_softrst());
             defmt::write!(f, "m_hardrst: {=bool}, ", &self.m_hardrst());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Maska {
@@ -3896,18 +3810,16 @@ pub mod field_sets {
     impl core::fmt::Debug for Maskb {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Maskb");
-            {
-                d.field("m_gcrcsent", &self.m_gcrcsent());
-            }
+            d.field("m_gcrcsent", &self.m_gcrcsent());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Maskb {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Maskb { ");
+            defmt::write!(f, "Maskb {{ ");
             defmt::write!(f, "m_gcrcsent: {=bool}, ", &self.m_gcrcsent());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Maskb {
@@ -4026,18 +3938,16 @@ pub mod field_sets {
     impl core::fmt::Debug for Control4 {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Control4");
-            {
-                d.field("tog_exit_aud", &self.tog_exit_aud());
-            }
+            d.field("tog_exit_aud", &self.tog_exit_aud());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Control4 {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Control4 { ");
+            defmt::write!(f, "Control4 {{ ");
             defmt::write!(f, "tog_exit_aud: {=bool}, ", &self.tog_exit_aud());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Control4 {
@@ -4252,34 +4162,24 @@ pub mod field_sets {
     impl core::fmt::Debug for Status0A {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Status0A");
-            {
-                d.field("softfail", &self.softfail());
-            }
-            {
-                d.field("retryfail", &self.retryfail());
-            }
-            {
-                d.field("power", &self.power());
-            }
-            {
-                d.field("softrst", &self.softrst());
-            }
-            {
-                d.field("hardrst", &self.hardrst());
-            }
+            d.field("softfail", &self.softfail());
+            d.field("retryfail", &self.retryfail());
+            d.field("power", &self.power());
+            d.field("softrst", &self.softrst());
+            d.field("hardrst", &self.hardrst());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Status0A {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Status0A { ");
+            defmt::write!(f, "Status0A {{ ");
             defmt::write!(f, "softfail: {=bool}, ", &self.softfail());
             defmt::write!(f, "retryfail: {=bool}, ", &self.retryfail());
             defmt::write!(f, "power: {=u8}, ", &self.power());
             defmt::write!(f, "softrst: {=bool}, ", &self.softrst());
             defmt::write!(f, "hardrst: {=bool}, ", &self.hardrst());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Status0A {
@@ -4472,30 +4372,22 @@ pub mod field_sets {
     impl core::fmt::Debug for Status1A {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Status1A");
-            {
-                d.field("togss", &self.togss());
-            }
-            {
-                d.field("rxsop_2_db", &self.rxsop_2_db());
-            }
-            {
-                d.field("rxsop_1_db", &self.rxsop_1_db());
-            }
-            {
-                d.field("rxsop", &self.rxsop());
-            }
+            d.field("togss", &self.togss());
+            d.field("rxsop_2_db", &self.rxsop_2_db());
+            d.field("rxsop_1_db", &self.rxsop_1_db());
+            d.field("rxsop", &self.rxsop());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Status1A {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Status1A { ");
+            defmt::write!(f, "Status1A {{ ");
             defmt::write!(f, "togss: {}, ", &self.togss());
             defmt::write!(f, "rxsop_2_db: {=bool}, ", &self.rxsop_2_db());
             defmt::write!(f, "rxsop_1_db: {=bool}, ", &self.rxsop_1_db());
             defmt::write!(f, "rxsop: {=bool}, ", &self.rxsop());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Status1A {
@@ -4782,37 +4674,21 @@ pub mod field_sets {
     impl core::fmt::Debug for Interrupta {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Interrupta");
-            {
-                d.field("i_ocp_temp", &self.i_ocp_temp());
-            }
-            {
-                d.field("i_togdone", &self.i_togdone());
-            }
-            {
-                d.field("i_softfail", &self.i_softfail());
-            }
-            {
-                d.field("i_retryfail", &self.i_retryfail());
-            }
-            {
-                d.field("i_hardsent", &self.i_hardsent());
-            }
-            {
-                d.field("i_txsent", &self.i_txsent());
-            }
-            {
-                d.field("i_softrst", &self.i_softrst());
-            }
-            {
-                d.field("i_hardrst", &self.i_hardrst());
-            }
+            d.field("i_ocp_temp", &self.i_ocp_temp());
+            d.field("i_togdone", &self.i_togdone());
+            d.field("i_softfail", &self.i_softfail());
+            d.field("i_retryfail", &self.i_retryfail());
+            d.field("i_hardsent", &self.i_hardsent());
+            d.field("i_txsent", &self.i_txsent());
+            d.field("i_softrst", &self.i_softrst());
+            d.field("i_hardrst", &self.i_hardrst());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Interrupta {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Interrupta { ");
+            defmt::write!(f, "Interrupta {{ ");
             defmt::write!(f, "i_ocp_temp: {=bool}, ", &self.i_ocp_temp());
             defmt::write!(f, "i_togdone: {=bool}, ", &self.i_togdone());
             defmt::write!(f, "i_softfail: {=bool}, ", &self.i_softfail());
@@ -4821,7 +4697,7 @@ pub mod field_sets {
             defmt::write!(f, "i_txsent: {=bool}, ", &self.i_txsent());
             defmt::write!(f, "i_softrst: {=bool}, ", &self.i_softrst());
             defmt::write!(f, "i_hardrst: {=bool}, ", &self.i_hardrst());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Interrupta {
@@ -4940,18 +4816,16 @@ pub mod field_sets {
     impl core::fmt::Debug for Interruptb {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Interruptb");
-            {
-                d.field("i_gcrcsent", &self.i_gcrcsent());
-            }
+            d.field("i_gcrcsent", &self.i_gcrcsent());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Interruptb {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Interruptb { ");
+            defmt::write!(f, "Interruptb {{ ");
             defmt::write!(f, "i_gcrcsent: {=bool}, ", &self.i_gcrcsent());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Interruptb {
@@ -5214,34 +5088,20 @@ pub mod field_sets {
     impl core::fmt::Debug for Status0 {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Status0");
-            {
-                d.field("vbusok", &self.vbusok());
-            }
-            {
-                d.field("activity", &self.activity());
-            }
-            {
-                d.field("comp", &self.comp());
-            }
-            {
-                d.field("crc_chk", &self.crc_chk());
-            }
-            {
-                d.field("alert", &self.alert());
-            }
-            {
-                d.field("wake", &self.wake());
-            }
-            {
-                d.field("bc_lvl", &self.bc_lvl());
-            }
+            d.field("vbusok", &self.vbusok());
+            d.field("activity", &self.activity());
+            d.field("comp", &self.comp());
+            d.field("crc_chk", &self.crc_chk());
+            d.field("alert", &self.alert());
+            d.field("wake", &self.wake());
+            d.field("bc_lvl", &self.bc_lvl());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Status0 {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Status0 { ");
+            defmt::write!(f, "Status0 {{ ");
             defmt::write!(f, "vbusok: {=bool}, ", &self.vbusok());
             defmt::write!(f, "activity: {=bool}, ", &self.activity());
             defmt::write!(f, "comp: {=bool}, ", &self.comp());
@@ -5249,7 +5109,7 @@ pub mod field_sets {
             defmt::write!(f, "alert: {=bool}, ", &self.alert());
             defmt::write!(f, "wake: {=bool}, ", &self.wake());
             defmt::write!(f, "bc_lvl: {}, ", &self.bc_lvl());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Status0 {
@@ -5536,37 +5396,21 @@ pub mod field_sets {
     impl core::fmt::Debug for Status1 {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Status1");
-            {
-                d.field("rxsop_2", &self.rxsop_2());
-            }
-            {
-                d.field("rxsop_1", &self.rxsop_1());
-            }
-            {
-                d.field("rx_empty", &self.rx_empty());
-            }
-            {
-                d.field("rx_full", &self.rx_full());
-            }
-            {
-                d.field("tx_empty", &self.tx_empty());
-            }
-            {
-                d.field("tx_full", &self.tx_full());
-            }
-            {
-                d.field("ovrtemp", &self.ovrtemp());
-            }
-            {
-                d.field("ocp", &self.ocp());
-            }
+            d.field("rxsop_2", &self.rxsop_2());
+            d.field("rxsop_1", &self.rxsop_1());
+            d.field("rx_empty", &self.rx_empty());
+            d.field("rx_full", &self.rx_full());
+            d.field("tx_empty", &self.tx_empty());
+            d.field("tx_full", &self.tx_full());
+            d.field("ovrtemp", &self.ovrtemp());
+            d.field("ocp", &self.ocp());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Status1 {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Status1 { ");
+            defmt::write!(f, "Status1 {{ ");
             defmt::write!(f, "rxsop_2: {=bool}, ", &self.rxsop_2());
             defmt::write!(f, "rxsop_1: {=bool}, ", &self.rxsop_1());
             defmt::write!(f, "rx_empty: {=bool}, ", &self.rx_empty());
@@ -5575,7 +5419,7 @@ pub mod field_sets {
             defmt::write!(f, "tx_full: {=bool}, ", &self.tx_full());
             defmt::write!(f, "ovrtemp: {=bool}, ", &self.ovrtemp());
             defmt::write!(f, "ocp: {=bool}, ", &self.ocp());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Status1 {
@@ -5862,37 +5706,21 @@ pub mod field_sets {
     impl core::fmt::Debug for Interrupt {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
             let mut d = f.debug_struct("Interrupt");
-            {
-                d.field("i_vbusok", &self.i_vbusok());
-            }
-            {
-                d.field("i_activity", &self.i_activity());
-            }
-            {
-                d.field("i_comp_chng", &self.i_comp_chng());
-            }
-            {
-                d.field("i_crc_chk", &self.i_crc_chk());
-            }
-            {
-                d.field("i_alert", &self.i_alert());
-            }
-            {
-                d.field("i_wake", &self.i_wake());
-            }
-            {
-                d.field("i_collision", &self.i_collision());
-            }
-            {
-                d.field("i_bc_lvl", &self.i_bc_lvl());
-            }
+            d.field("i_vbusok", &self.i_vbusok());
+            d.field("i_activity", &self.i_activity());
+            d.field("i_comp_chng", &self.i_comp_chng());
+            d.field("i_crc_chk", &self.i_crc_chk());
+            d.field("i_alert", &self.i_alert());
+            d.field("i_wake", &self.i_wake());
+            d.field("i_collision", &self.i_collision());
+            d.field("i_bc_lvl", &self.i_bc_lvl());
             d.finish()
         }
     }
     #[cfg(feature = "defmt")]
     impl defmt::Format for Interrupt {
         fn format(&self, f: defmt::Formatter) {
-            defmt::write!(f, "Interrupt { ");
+            defmt::write!(f, "Interrupt {{ ");
             defmt::write!(f, "i_vbusok: {=bool}, ", &self.i_vbusok());
             defmt::write!(f, "i_activity: {=bool}, ", &self.i_activity());
             defmt::write!(f, "i_comp_chng: {=bool}, ", &self.i_comp_chng());
@@ -5901,7 +5729,7 @@ pub mod field_sets {
             defmt::write!(f, "i_wake: {=bool}, ", &self.i_wake());
             defmt::write!(f, "i_collision: {=bool}, ", &self.i_collision());
             defmt::write!(f, "i_bc_lvl: {=bool}, ", &self.i_bc_lvl());
-            defmt::write!(f, "}");
+            defmt::write!(f, "}}");
         }
     }
     impl core::ops::BitAnd for Interrupt {
@@ -5957,7 +5785,7 @@ pub mod field_sets {
     }
     /// Enum containing all possible field set types
     pub enum FieldSetValue {
-        ///Device Identification Register
+        ///Device Identification Register. Contains Version, Product, and Revision IDs.
         DeviceId(DeviceId),
         ///Switch Control Register 0
         Switches0(Switches0),
@@ -6177,6 +6005,122 @@ pub mod field_sets {
     impl From<Interrupt> for FieldSetValue {
         fn from(val: Interrupt) -> Self {
             Self::Interrupt(val)
+        }
+    }
+}
+///Major hardware version of the FUSB302B device.
+#[repr(u8)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum Fusb302Version {
+    ///Version A Hardware
+    VersionA = 8,
+    ///Version B Hardware
+    VersionB = 9,
+    ///Version C Hardware
+    VersionC = 10,
+    ///An unknown or future hardware version.
+    UnknownOrFutureVersion(u8) = 11,
+}
+impl From<u8> for Fusb302Version {
+    fn from(val: u8) -> Self {
+        match val {
+            8 => Self::VersionA,
+            9 => Self::VersionB,
+            10 => Self::VersionC,
+            val => Self::UnknownOrFutureVersion(val),
+        }
+    }
+}
+impl From<Fusb302Version> for u8 {
+    fn from(val: Fusb302Version) -> Self {
+        match val {
+            Fusb302Version::VersionA => 8,
+            Fusb302Version::VersionB => 9,
+            Fusb302Version::VersionC => 10,
+            Fusb302Version::UnknownOrFutureVersion(num) => num,
+        }
+    }
+}
+///Specific product variant or package of the FUSB302B device.
+#[repr(u8)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum Fusb302Product {
+    ///FUSB302BMPX/FUSB302BVMPX(Default) & FUSB302BUCX
+    DefaultUcWlcsp = 0,
+    ///FUSB302B01MPX (MLP only)
+    Mlp01 = 1,
+    ///FUSB302B10MPX (MLP only)
+    Mlp10 = 2,
+    ///FUSB302B11MPX (MLP only)
+    Mlp11 = 3,
+}
+impl core::convert::TryFrom<u8> for Fusb302Product {
+    type Error = ::device_driver::ConversionError<u8>;
+    fn try_from(val: u8) -> Result<Self, Self::Error> {
+        match val {
+            0 => Ok(Self::DefaultUcWlcsp),
+            1 => Ok(Self::Mlp01),
+            2 => Ok(Self::Mlp10),
+            3 => Ok(Self::Mlp11),
+            val => {
+                Err(::device_driver::ConversionError {
+                    source: val,
+                    target: "Fusb302Product",
+                })
+            }
+        }
+    }
+}
+impl From<Fusb302Product> for u8 {
+    fn from(val: Fusb302Product) -> Self {
+        match val {
+            Fusb302Product::DefaultUcWlcsp => 0,
+            Fusb302Product::Mlp01 => 1,
+            Fusb302Product::Mlp10 => 2,
+            Fusb302Product::Mlp11 => 3,
+        }
+    }
+}
+///Minor revision of the FUSB302B device for its specific hardware version.
+#[repr(u8)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum Fusb302Revision {
+    ///Revision A
+    RevA = 0,
+    ///Revision B
+    RevB = 1,
+    ///Revision C
+    RevC = 2,
+    ///Revision D
+    RevD = 3,
+}
+impl core::convert::TryFrom<u8> for Fusb302Revision {
+    type Error = ::device_driver::ConversionError<u8>;
+    fn try_from(val: u8) -> Result<Self, Self::Error> {
+        match val {
+            0 => Ok(Self::RevA),
+            1 => Ok(Self::RevB),
+            2 => Ok(Self::RevC),
+            3 => Ok(Self::RevD),
+            val => {
+                Err(::device_driver::ConversionError {
+                    source: val,
+                    target: "Fusb302Revision",
+                })
+            }
+        }
+    }
+}
+impl From<Fusb302Revision> for u8 {
+    fn from(val: Fusb302Revision) -> Self {
+        match val {
+            Fusb302Revision::RevA => 0,
+            Fusb302Revision::RevB => 1,
+            Fusb302Revision::RevC => 2,
+            Fusb302Revision::RevD => 3,
         }
     }
 }

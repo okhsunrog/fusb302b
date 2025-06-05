@@ -8,14 +8,55 @@ DeviceId:
   type: register
   address: 0x01
   size_bits: 8
-  access: RO # Datasheet: R
-  description: "Device Identification Register"
+  access: RO
+  description: "Device Identification Register. Contains Version, Product, and Revision IDs."
   fields:
-    device_id:
+    version_id:
       base: uint
-      start: 0
-      end: 8 # Bits 0-7
-      description: "Device ID value (e.g., 0x9x for FUSB302B variants)."
+      start: 4 # Bits 7:4 (MSB of the 4 bits is bit 7, LSB is bit 4)
+      end: 8 # Exclusive end, covers bits 4, 5, 6, 7
+      description: "Device Version ID. Corresponds to major hardware revisions. See Table 17."
+      conversion:
+        name: Fusb302Version
+        description: "Major hardware version of the FUSB302B device."
+        VersionA: { value: 0b1000, description: "Version A Hardware" }
+        VersionB: { value: 0b1001, description: "Version B Hardware" }
+        VersionC: { value: 0b1010, description: "Version C Hardware" }
+        UnknownOrFutureVersion:
+          {
+            value: catch_all,
+            description: "An unknown or future hardware version.",
+          }
+
+    product_id:
+      base: uint
+      start: 2 # Bits 3:2
+      end: 4 # Exclusive end, covers bits 2, 3
+      description: "Product ID, distinguishing different FUSB302B variants/packages. See Table 17."
+      conversion: # Changed from try_conversion to conversion as all 4 values are covered
+        name: Fusb302Product
+        description: "Specific product variant or package of the FUSB302B device."
+        DefaultUcWlcsp:
+          {
+            value: 0b00,
+            description: "FUSB302BMPX/FUSB302BVMPX(Default) & FUSB302BUCX",
+          }
+        Mlp01: { value: 0b01, description: "FUSB302B01MPX (MLP only)" }
+        Mlp10: { value: 0b10, description: "FUSB302B10MPX (MLP only)" }
+        Mlp11: { value: 0b11, description: "FUSB302B11MPX (MLP only)" }
+
+    revision_id:
+      base: uint
+      start: 0 # Bits 1:0
+      end: 2 # Exclusive end, covers bits 0, 1
+      description: "Revision ID, indicating minor revision for the given hardware Version. See Table 17."
+      conversion:
+        name: Fusb302Revision
+        description: "Minor revision of the FUSB302B device for its specific hardware version."
+        RevA: { value: 0b00, description: "Revision A" }
+        RevB: { value: 0b01, description: "Revision B" }
+        RevC: { value: 0b10, description: "Revision C" }
+        RevD: { value: 0b11, description: "Revision D" }
 
 Switches0:
   type: register
