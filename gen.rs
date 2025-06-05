@@ -203,7 +203,7 @@ impl<I> Device<I> {
             ::device_driver::RW,
         >::new(self.interface(), address as u8, field_sets::Switches1::new)
     }
-    ///Measure Control Register
+    ///Measure Control Register. Used to configure MDAC for CC or VBUS measurements.
     pub fn measure(
         &mut self,
     ) -> ::device_driver::RegisterOperation<
@@ -800,7 +800,7 @@ pub mod field_sets {
     impl Switches0 {
         /// Create a new instance, loaded with the reset value (if any)
         pub const fn new() -> Self {
-            Self { bits: [0] }
+            Self { bits: [3] }
         }
         /// Create a new instance, loaded with all zeroes
         pub const fn new_zero() -> Self {
@@ -1110,7 +1110,7 @@ pub mod field_sets {
     impl Switches1 {
         /// Create a new instance, loaded with the reset value (if any)
         pub const fn new() -> Self {
-            Self { bits: [0] }
+            Self { bits: [32] }
         }
         /// Create a new instance, loaded with all zeroes
         pub const fn new_zero() -> Self {
@@ -1349,7 +1349,7 @@ pub mod field_sets {
             self
         }
     }
-    ///Measure Control Register
+    ///Measure Control Register. Used to configure MDAC for CC or VBUS measurements.
     #[derive(Copy, Clone, Eq, PartialEq)]
     pub struct Measure {
         /// The internal bits
@@ -1370,7 +1370,7 @@ pub mod field_sets {
     impl Measure {
         /// Create a new instance, loaded with the reset value (if any)
         pub const fn new() -> Self {
-            Self { bits: [0] }
+            Self { bits: [49] }
         }
         /// Create a new instance, loaded with all zeroes
         pub const fn new_zero() -> Self {
@@ -1378,7 +1378,7 @@ pub mod field_sets {
         }
         ///Read the `meas_vbus` field of the register.
         ///
-        ///Measure VBUS (true: measure VBUS voltage).
+        ///Selects MDAC/comparator target. true: Measure VBUS (MEAS_CC* in Switches0 must be 0), false: Measure CC (selected by MEAS_CC*).
         pub fn meas_vbus(&self) -> bool {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -1390,7 +1390,7 @@ pub mod field_sets {
         }
         ///Read the `mdac` field of the register.
         ///
-        ///MDAC setting for voltage measurement threshold.
+        ///Measure Block DAC data input (6-bit value). LSB is ~42mV if meas_vbus=false (CC measurement), or ~420mV if meas_vbus=true (VBUS measurement).
         pub fn mdac(&self) -> u8 {
             let raw = unsafe {
                 ::device_driver::ops::load_lsb0::<
@@ -1402,7 +1402,7 @@ pub mod field_sets {
         }
         ///Write the `meas_vbus` field of the register.
         ///
-        ///Measure VBUS (true: measure VBUS voltage).
+        ///Selects MDAC/comparator target. true: Measure VBUS (MEAS_CC* in Switches0 must be 0), false: Measure CC (selected by MEAS_CC*).
         pub fn set_meas_vbus(&mut self, value: bool) {
             let raw = value as _;
             unsafe {
@@ -1414,7 +1414,7 @@ pub mod field_sets {
         }
         ///Write the `mdac` field of the register.
         ///
-        ///MDAC setting for voltage measurement threshold.
+        ///Measure Block DAC data input (6-bit value). LSB is ~42mV if meas_vbus=false (CC measurement), or ~420mV if meas_vbus=true (VBUS measurement).
         pub fn set_mdac(&mut self, value: u8) {
             let raw = value;
             unsafe {
@@ -5791,7 +5791,7 @@ pub mod field_sets {
         Switches0(Switches0),
         ///Switch Control Register 1
         Switches1(Switches1),
-        ///Measure Control Register
+        ///Measure Control Register. Used to configure MDAC for CC or VBUS measurements.
         Measure(Measure),
         ///Slice Control Register
         Slice(Slice),

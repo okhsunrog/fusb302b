@@ -63,6 +63,7 @@ Switches0:
   address: 0x02
   size_bits: 8
   access: RW # Datasheet: R/W
+  reset_value: 0b00000011
   description: "Switch Control Register 0"
   fields:
     pu_en2:
@@ -103,6 +104,7 @@ Switches1:
   address: 0x03
   size_bits: 8
   access: RW # Datasheet: R/W
+  reset_value: 0b00100000
   description: "Switch Control Register 1"
   fields:
     powerrole:
@@ -145,19 +147,20 @@ Measure:
   type: register
   address: 0x04
   size_bits: 8
-  access: RW # Datasheet: R/W
-  description: "Measure Control Register"
+  access: RW
+  reset_value: 0b00110001
+  description: "Measure Control Register. Used to configure MDAC for CC or VBUS measurements."
   fields:
-    # Bit 7 is Reserved.
-    meas_vbus:
+    # Bit 7 is Reserved. (Reset: 0)
+    meas_vbus: # Bit 6
       base: bool
       start: 6
-      description: "Measure VBUS (true: measure VBUS voltage)."
-    mdac:
+      description: "Selects MDAC/comparator target. true: Measure VBUS (MEAS_CC* in Switches0 must be 0), false: Measure CC (selected by MEAS_CC*)." # Reset: 0 (false/Measure CC)
+    mdac: # Bits 5:0
       base: uint
-      start: 0 # Bits 0-5
+      start: 0
       end: 6
-      description: "MDAC setting for voltage measurement threshold."
+      description: "Measure Block DAC data input (6-bit value). LSB is ~42mV if meas_vbus=false (CC measurement), or ~420mV if meas_vbus=true (VBUS measurement)." # Reset: 0b110001 (49 decimal)
 
 Slice:
   type: register
