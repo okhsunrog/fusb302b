@@ -2,31 +2,35 @@
 name = "fusb302b"
 version = "0.0.1"
 edition = "2024"
-description = "FUSB302B driver for `usbpd` library, implementing `usbpd-traits`."
+description = "FUSB302B driver for `usbpd` library, implementing `usbpd-traits`, using `device-driver` crate."
 documentation = "https://docs.rs/fusb302b"
 repository = "https://github.com/okhsunrog/fusb302b"
 homepage = "https://github.com/okhsunrog/fusb302b"
 license = "MIT"
-keywords = ["nostd", "usbpd", "driver", "embedded", "fusb302b"]
+keywords = ["nostd", "usbpd", "driver", "embedded", "fusb302b", "async"]
 
 [lib]
 harness = false # do not use the built-in cargo test harness -> resolve rust-analyzer errors
 test = false
+bench = false
 
 [dependencies]
-# byteorder = { version = "1.5", default-features = false }
+embedded-hal = "1.0.0" # for supporting blocking I2C implementations, like bitbang hal
 embedded-hal-async = "1.0"
+bisync = "0.3"
+defmt = { version = "1.0", optional = true }
+log = { version = "0.4", optional = true }
 # heapless = { version = "0.8", features = ["defmt-03"] }
-# paste = "1.0"
-defmt = { version = "1.0", optional = true } # Or your specific version
-# proc-bitfield = "0.5"
-embassy-time = "0.4"
+# embassy-time = "0.4"
 # usb-pd = { git = "https://github.com/okhsunrog/usb-pd-rs" }
 usbpd-traits = "1.0.0"
 device-driver = { git = "https://github.com/diondokter/device-driver", rev = "9a9d03a84cd2c65694124be4b614ebc32e40c2da", default-features = false, features = ["yaml"] }
-# thiserror = { version = "2.0.12", default-features = false }
+thiserror = { version = "2.0.12", default-features = false }
 
 [features]
 default = []
-defmt = ["dep:defmt", "device-driver/defmt-03"] # This line declares the "defmt" feature
+std = ["thiserror/std"]
+log = ["dep:log"]
+defmt = ["dep:defmt", "embedded-hal/defmt-03", "embedded-hal-async/defmt-03", "device-driver/defmt-03"]
+
 
