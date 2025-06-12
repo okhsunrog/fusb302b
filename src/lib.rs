@@ -1,60 +1,65 @@
-#![cfg_attr(not(test), no_std)]
-// #![warn(missing_docs)] // Good to enable later
+#![cfg_attr(not(any(test, feature = "std")), no_std)]
 
-//! Low-level driver for the FUSB302B USB Type-C controller with PD.
-//! This crate provides register and FIFO access via an asynchronous I2C interface.
+#[macro_use]
+pub(crate) mod fmt;
 
-use embedded_hal_async::i2c::{I2c, Operation};
+use thiserror::Error;
 
-// This line will generate the `FusbLowLevel` struct and associated field_sets, enums, etc.
-// based on the definitions in "device.yaml".
-device_driver::create_device!(
-    device_name: Device,
-    manifest: "device.yaml"
-);
+device_driver::create_device!(device_name: FusbLowLevel, manifest: "device.yaml");
+pub const FUSB302B_I2C_ADDRESS: u8 = 0x22;
 
-/// The I2C device address for the FUSB302B (common variants like BUCX, BMPX, BVMPX).
-/// Other variants might have addresses 0x23, 0x24, or 0x25.
-/// Refer to Table 15 in the FUSB302B datasheet.
-pub const DEFAULT_DEVICE_I2C_ADDR: u8 = 0x22;
-
-/// The asynchronous I2C wrapper interface to the FUSB302B driver.
-#[derive(Debug)]
-pub struct DeviceInterface<I2C> {
-    i2c: I2C,
-    device_address: u8,
+#[derive(Debug, Error)]
+pub enum FusbError<I2cErr> {
+    #[error("I2C error")]
+    I2c(I2cErr),
+    #[error("Invalid voltage: {0}mV for setting")]
+    InvalidVoltage(u16),
+    #[error("Invalid current: {0}mA for setting")]
+    InvalidCurrent(u16),
+    #[error("Feature or specific mode not supported/implemented: {0}")]
+    NotSupported(&'static str),
 }
 
-impl<I2C> DeviceInterface<I2C>
-where
-    I2C: I2c,
-{
-    /// Construct a new instance of the device interface.
-    ///
-    /// # Arguments
-    ///
-    /// * `i2c`: The asynchronous I2C bus peripheral.
-    /// * `device_address`: The 7-bit I2C address of the FUSB302B device.
-    ///   Use `DEFAULT_DEVICE_I2C_ADDR` (0x22) if unsure, or check your FUSB302B variant.
-    pub fn new(i2c: I2C, device_address: u8) -> Self {
-        Self {
-            i2c,
-            device_address,
+#[cfg(feature = "defmt")]
+impl<I2cErr> defmt::Format for FusbError<I2cErr> {
+    fn format(&self, f: defmt::Formatter) {
+        match self {
+            FusbError::I2c(_) => defmt::write!(f, "E:I2C"),
+            FusbError::InvalidVoltage(v) => defmt::write!(f, "E:V_set({}mV)", v),
+            FusbError::InvalidCurrent(c) => defmt::write!(f, "E:I_set({}mA)", c),
+            FusbError::NotSupported(s) => defmt::write!(f, "E:NoSupp({=str})", s),
         }
     }
+}
 
-    /// Consumes the interface and returns the underlying I2C bus.
-    pub fn release(self) -> I2C {
-        self.i2c
+
+pub struct FusbInterface<I2CBus> {
+    i2c_bus: I2CBus,
+}
+
+impl<I2CBus> FusbInterface<I2CBus> {
+    pub fn new(i2c_bus: I2CBus) -> Self {
+        Self { i2c_bus }
     }
 }
 
-/// Low-level interface error that wraps the I2C bus error.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum DeviceError<I2cError> {
-    /// I2C communication error.
-    I2c(I2cError),
-    /// Data slice provided was too short or an unexpected length.
-    SliceLength,
+#[path = "."]
+mod asynchronous {
+    use bisync::asynchronous::*;
+    use device_driver::AsyncRegisterInterface as RegisterInterface;
+    use embedded_hal_async::i2c::I2c;
+    mod driver;
+    pub use driver::*;
 }
+pub use asynchronous::Fusb302b as Fusb302bAsync;
+
+#[path = "."]
+mod blocking {
+    use bisync::synchronous::*;
+    use device_driver::RegisterInterface;
+    use embedded_hal::i2c::I2c;
+    #[allow(clippy::duplicate_mod)]
+    mod driver;
+    pub use driver::*;
+}
+pub use blocking::Fusb302b;
