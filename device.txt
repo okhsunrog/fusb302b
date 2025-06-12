@@ -167,6 +167,7 @@ Slice:
   address: 0x05
   size_bits: 8
   access: RW # Datasheet: R/W
+  reset_value: 0b01100000
   description: "Slice Control Register"
   fields:
     sdac_hys:
@@ -175,9 +176,9 @@ Slice:
       end: 8
       description: "SDAC hysteresis setting."
       conversion:
-        name: SdacHys
+        name: SlicerHysteresis
         NoHysteresis: { value: 0, description: "No hysteresis" }
-        Hys85mV: { value: 1, description: "85mV hysteresis" }
+        Hys85mV: { value: 1, description: "85mV hysteresis" } # Default
         Hys170mV: { value: 2, description: "170mV hysteresis" }
         Hys255mV: { value: 3, description: "255mV hysteresis" }
     sdac:
@@ -191,6 +192,7 @@ Control0:
   address: 0x06
   size_bits: 8
   access: RW # Datasheet: R/W/C (due to W/C fields)
+  reset_value: 0b00100100
   description: "Control Register 0"
   fields:
     # Bit 7 is Reserved.
@@ -233,6 +235,7 @@ Control1:
   address: 0x07
   size_bits: 8
   access: RW # Datasheet: R/W/C (due to W/C field)
+  reset_value: 0b00000000
   description: "Control Register 1"
   fields:
     # Bit 7 is Reserved.
@@ -268,6 +271,7 @@ Control2:
   address: 0x08
   size_bits: 8
   access: RW # Datasheet: R/W
+  reset_value: 0b00000010
   description: "Control Register 2"
   fields:
     tog_save_pwr:
@@ -310,6 +314,7 @@ Control3:
   address: 0x09
   size_bits: 8
   access: RW # Datasheet: R/W/C (due to W/C field)
+  reset_value: 0b00000110
   description: "Control Register 3"
   fields:
     # Bit 7 is Reserved.
@@ -351,6 +356,7 @@ Mask:
   address: 0x0A
   size_bits: 8
   access: RW # Datasheet: R/W
+  reset_value: 0b00000000
   description: "Interrupt Mask Register"
   fields:
     m_vbusok:
@@ -391,6 +397,7 @@ Power:
   address: 0x0B
   size_bits: 8
   access: RW # Datasheet: R/W
+  reset_value: 0b00000001
   description: "Power Control Register"
   fields:
     # Bits 7-4 are Reserved.
@@ -433,6 +440,7 @@ Ocpreg:
   address: 0x0D
   size_bits: 8
   access: RW # Datasheet: R/W
+  reset_value: 0b00001111
   description: "Over-Current Protection Register"
   fields:
     # Bits 7-4 are Reserved.
@@ -451,6 +459,7 @@ Maska:
   address: 0x0E
   size_bits: 8
   access: RW # Datasheet: R/W
+  reset_value: 0b00000000
   description: "Interrupt Mask Register A"
   fields:
     m_ocp_temp:
@@ -491,6 +500,7 @@ Maskb:
   address: 0x0F
   size_bits: 8
   access: RW # Datasheet: R/W
+  reset_value: 0b00000000
   description: "Interrupt Mask Register B"
   fields:
     # Bits 7-1 are Reserved.
@@ -504,6 +514,7 @@ Control4:
   address: 0x10
   size_bits: 8
   access: RW # Datasheet: R/W
+  reset_value: 0b00000000
   description: "Control Register 4"
   fields:
     # Bits 7-1 are Reserved.
