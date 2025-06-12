@@ -60,12 +60,12 @@ where
     }
 }
 
-pub trait CurrentAxpDriverInterface<E>:
+pub trait CurrentFusbDriverInterface<E>:
     RegisterInterface<AddressType = u8, Error = FusbError<E>>
 {
 }
 
-impl<T, E> CurrentAxpDriverInterface<E> for T
+impl<T, E> CurrentFusbDriverInterface<E> for T
 where
     T: RegisterInterface<AddressType = u8, Error = FusbError<E>>,
     E: core::fmt::Debug,
@@ -74,26 +74,26 @@ where
 
 include!("bisync_helpers.rs");
 
-// impl<I2CImpl, I2CBusErr> Axp192<I2CImpl, I2CBusErr>
-// where
-//     I2CImpl: CurrentAxpDriverInterface<I2CBusErr>,
-//     I2CBusErr: core::fmt::Debug,
-// {
+impl<I2CImpl, I2CBusErr> Fusb302b<I2CImpl, I2CBusErr>
+where
+    I2CImpl: CurrentFusbDriverInterface<I2CBusErr>,
+    I2CBusErr: core::fmt::Debug,
+{
 
 
-//     #[bisync]
-//     pub async fn set_dcdc_enable(
-//         &mut self,
-//         dc: DcId,
-//         enable: bool,
-//     ) -> Result<(), AxpError<I2CBusErr>> {
-//         let mut op = self.ll.power_output_control();
-//         modify_internal(&mut op, |r| match dc {
-//             DcId::Dcdc1 => r.set_dcdc_1_output_enable(enable),
-//             DcId::Dcdc2 => r.set_dcdc_2_output_enable(enable),
-//             DcId::Dcdc3 => r.set_dcdc_3_output_enable(enable),
-//         })
-//         .await
-//     }
+    // #[bisync]
+    // pub async fn set_dcdc_enable(
+    //     &mut self,
+    //     dc: DcId,
+    //     enable: bool,
+    // ) -> Result<(), AxpError<I2CBusErr>> {
+    //     let mut op = self.ll.power_output_control();
+    //     modify_internal(&mut op, |r| match dc {
+    //         DcId::Dcdc1 => r.set_dcdc_1_output_enable(enable),
+    //         DcId::Dcdc2 => r.set_dcdc_2_output_enable(enable),
+    //         DcId::Dcdc3 => r.set_dcdc_3_output_enable(enable),
+    //     })
+    //     .await
+    // }
 
-// }
+}
