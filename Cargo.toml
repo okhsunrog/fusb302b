@@ -24,7 +24,7 @@ log = { version = "0.4", optional = true }
 # embassy-time = "0.4"
 # usb-pd = { git = "https://github.com/okhsunrog/usb-pd-rs" }
 usbpd-traits = "1.0.0"
-device-driver = { git = "https://github.com/diondokter/device-driver", rev = "9a9d03a84cd2c65694124be4b614ebc32e40c2da", default-features = false, features = ["yaml"] }
+device-driver = { version = "1.0.5", default-features = false, features = ["yaml"] }
 thiserror = { version = "2.0.12", default-features = false }
 
 [features]
