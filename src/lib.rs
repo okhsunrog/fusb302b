@@ -100,7 +100,6 @@ where
     type AddressType = u8;
 
     async fn write(&mut self, address: u8, buf: &[u8]) -> Result<usize, Self::Error> {
-        // This implementation detail is simplified; real-world might need heapless vector or DMA.
         let mut buffer = [0u8; 64];
         if (1 + buf.len()) > buffer.len() {
             return Err(FusbError::LenExceedsBuffer);
@@ -147,7 +146,6 @@ where
             _marker: core::marker::PhantomData,
         };
 
-        // Initialize Reset register
         driver
             .ll
             .reset()
@@ -159,18 +157,17 @@ where
 
         Timer::after_millis(10).await;
 
-        // Initialize Power register
+        // FIX: Use the correct `set_pwr_...` names as indicated by the compiler.
         driver
             .ll
             .power()
             .write_async(|r| {
-                r.set_pwr0_bandgap_and_wake_enable(true);
-                r.set_pwr1_receiver_and_measure_refs_enable(true);
-                r.set_pwr2_measure_block_power_enable(true);
+                r.set_pwr_0_bandgap_and_wake_enable(true);
+                r.set_pwr_1_receiver_and_measure_refs_enable(true);
+                r.set_pwr_2_measure_block_power_enable(true);
             })
             .await?;
 
-        // Initialize Switches0 register
         driver
             .ll
             .switches_0()
@@ -181,7 +178,6 @@ where
             })
             .await?;
 
-        // Initialize Switches1 register
         driver
             .ll
             .switches_1()
@@ -191,12 +187,10 @@ where
             })
             .await?;
 
-        // Clear all interrupt masks
         driver.ll.mask().write_async(|r| *r = Mask::new()).await?;
         driver.ll.maska().write_async(|r| *r = Maska::new()).await?;
         driver.ll.maskb().write_async(|r| *r = Maskb::new()).await?;
 
-        // Enable interrupts from the chip
         driver
             .ll
             .control_0()
@@ -253,9 +247,10 @@ where
     }
 
     async fn transmit(&mut self, data: &[u8]) -> Result<(), DriverTxError> {
+        // FIX: Use the correct `set_pwr_...` name as indicated by the compiler.
         self.ll
             .power()
-            .modify_async(|r| r.set_pwr3_internal_oscillator_enable(true))
+            .modify_async(|r| r.set_pwr_3_internal_oscillator_enable(true))
             .await
             .map_err(|_| DriverTxError::Discarded)?;
 
@@ -271,10 +266,8 @@ where
                 token::PACK_SYM | (packet_byte_count as u8),
             ]);
             pos += 5;
-
             fifo_buffer[pos..pos + data.len()].copy_from_slice(data);
             pos += data.len();
-
             fifo_buffer[pos..pos + 4].copy_from_slice(&[
                 token::JAM_CRC,
                 token::EOP,
@@ -289,7 +282,7 @@ where
         if fifo_result.is_err() {
             self.ll
                 .power()
-                .modify_async(|r| r.set_pwr3_internal_oscillator_enable(false))
+                .modify_async(|r| r.set_pwr_3_internal_oscillator_enable(false))
                 .await
                 .ok();
             return Err(DriverTxError::Discarded);
@@ -340,9 +333,10 @@ where
             Timer::after_millis(1).await;
         }
 
+        // FIX: Use the correct `set_pwr_...` name as indicated by the compiler.
         self.ll
             .power()
-            .modify_async(|r| r.set_pwr3_internal_oscillator_enable(false))
+            .modify_async(|r| r.set_pwr_3_internal_oscillator_enable(false))
             .await
             .ok();
         tx_result
