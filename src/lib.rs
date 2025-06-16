@@ -144,7 +144,7 @@ where
     I2CBus: I2c<Error = E> + 'static,
     E: core::fmt::Debug,
 {
-    pub async fn new_and_init(i2c: I2CBus) -> Result<Self, FusbError<E>> {
+    pub async fn init(i2c: I2CBus) -> Result<Self, FusbError<E>> {
         let mut driver = Self {
             ll: FusbLowLevel::new(DeviceInterface::new(i2c)),
             _marker: core::marker::PhantomData,
