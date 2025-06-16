@@ -11,15 +11,19 @@ mod token {
     pub const EOP: u8 = 0x14;
     pub const TX_OFF: u8 = 0xFE;
     pub const TX_ON: u8 = 0xA1;
+
+    // A mask to isolate the bits that identify a Start-of-Packet family token.
+    pub const SOP_MASK: u8 = 0b1110_0000;
+
+    // The expected pattern after masking for any SOP*, SOP', or SOP'' token.
+    pub const SOP_PATTERN: u8 = 0b1110_0000;
 }
 
 use device_driver::{AsyncBufferInterface, AsyncRegisterInterface, BufferInterfaceError};
 use embedded_hal_async::i2c::I2c;
 use thiserror::Error;
 
-use crate::field_sets::{
-    Control0, Control1, DeviceId, Mask, Maska, Maskb, Power, Reset, Switches0, Switches1,
-};
+use crate::field_sets::{DeviceId, Mask, Maska, Maskb};
 use embassy_time::{Duration, Instant, Timer};
 use usbpd_traits::{Driver as SinkDriver, DriverRxError, DriverTxError};
 
@@ -157,7 +161,6 @@ where
 
         Timer::after_millis(10).await;
 
-        // FIX: Use the correct `set_pwr_...` names as indicated by the compiler.
         driver
             .ll
             .power()
@@ -247,7 +250,6 @@ where
     }
 
     async fn transmit(&mut self, data: &[u8]) -> Result<(), DriverTxError> {
-        // FIX: Use the correct `set_pwr_...` name as indicated by the compiler.
         self.ll
             .power()
             .modify_async(|r| r.set_pwr_3_internal_oscillator_enable(true))
@@ -333,7 +335,6 @@ where
             Timer::after_millis(1).await;
         }
 
-        // FIX: Use the correct `set_pwr_...` name as indicated by the compiler.
         self.ll
             .power()
             .modify_async(|r| r.set_pwr_3_internal_oscillator_enable(false))
@@ -381,7 +382,8 @@ where
             .await
             .map_err(|_| DriverRxError::Discarded)?;
 
-        if (token_buf[0] & 0b1110_0000) != 0b1110_0000 {
+        // Check if the received byte is a valid Start-of-Packet token.
+        if (token_buf[0] & token::SOP_MASK) != token::SOP_PATTERN {
             self.ll
                 .control_1()
                 .modify_async(|r| r.set_rx_flush(true))
