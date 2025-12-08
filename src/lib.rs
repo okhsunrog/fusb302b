@@ -30,6 +30,16 @@ use usbpd_traits::{Driver as SinkDriver, DriverRxError, DriverTxError};
 device_driver::create_device!(device_name: FusbLowLevel, manifest: "device.yaml");
 pub const FUSB302B_I2C_ADDRESS: u8 = 0x22;
 
+/// Convert BcLvl enum to comparable u8 value
+fn bc_lvl_to_u8(lvl: BcLvl) -> u8 {
+    match lvl {
+        BcLvl::LessThan200MV => 0,
+        BcLvl::Between200And660MV => 1,
+        BcLvl::Between660And1230MV => 2,
+        BcLvl::GreaterThan1230MV => 3,
+    }
+}
+
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum FusbError<I2cErr> {
@@ -139,6 +149,14 @@ where
     _marker: core::marker::PhantomData<E>,
 }
 
+/// Detected CC pin orientation
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum CcPin {
+    Cc1,
+    Cc2,
+}
+
 impl<I2CBus, E> Fusb302b<I2CBus, E>
 where
     I2CBus: I2c<Error = E> + 'static,
@@ -150,17 +168,26 @@ where
             _marker: core::marker::PhantomData,
         };
 
+        // Fully reset the FUSB302B
         driver
             .ll
             .reset()
-            .write_async(|r| {
-                r.set_sw_res(true);
-                r.set_pd_reset(true);
-            })
+            .write_async(|r| r.set_sw_res(true))
             .await?;
 
         Timer::after_millis(10).await;
 
+        // Verify device is responding
+        let device_id = driver.ll.device_id().read_async().await?;
+        // Check that we get a valid known version (A, B, or C)
+        match device_id.version_id() {
+            Fusb302Version::VersionA | Fusb302Version::VersionB | Fusb302Version::VersionC => {}
+            Fusb302Version::UnknownOrFutureVersion(_) => {
+                return Err(FusbError::LenExceedsBuffer); // TODO: add proper error variant
+            }
+        }
+
+        // Turn on all power
         driver
             .ll
             .power()
@@ -168,41 +195,138 @@ where
                 r.set_pwr_0_bandgap_and_wake_enable(true);
                 r.set_pwr_1_receiver_and_measure_refs_enable(true);
                 r.set_pwr_2_measure_block_power_enable(true);
+                r.set_pwr_3_internal_oscillator_enable(true);
             })
             .await?;
 
+        // Set interrupt masks to 0 (all interrupts enabled)
+        driver.ll.mask().write_async(|r| *r = Mask::new()).await?;
+        driver.ll.maska().write_async(|r| *r = Maska::new()).await?;
+        driver.ll.maskb().write_async(|r| *r = Maskb::new()).await?;
+
+        // Unmask interrupts
         driver
             .ll
+            .control_0()
+            .write_async(|r| {
+                r.set_int_mask(false);
+            })
+            .await?;
+
+        // Configure hardware auto-retry: 2 retries per USB PD spec (nRetryCount = 2)
+        driver
+            .ll
+            .control_3()
+            .write_async(|r| {
+                r.set_auto_retry(true);
+                r.set_n_retries(RetryCount::TwoRetries);
+                r.set_auto_softreset(false); // Let policy engine handle
+                r.set_auto_hardreset(false); // Let policy engine handle
+            })
+            .await?;
+
+        // Flush the RX buffer
+        driver
+            .ll
+            .control_1()
+            .write_async(|r| r.set_rx_flush(true))
+            .await?;
+
+        // Detect and select CC line
+        driver.detect_cc_pin().await?;
+
+        // Reset PD logic
+        driver
+            .ll
+            .reset()
+            .write_async(|r| r.set_pd_reset(true))
+            .await?;
+
+        Ok(driver)
+    }
+
+    /// Detect which CC pin is connected and configure switches accordingly
+    async fn detect_cc_pin(&mut self) -> Result<CcPin, FusbError<E>> {
+        // Measure CC1: PDWN1|PDWN2|MEAS_CC1
+        self.ll
             .switches_0()
             .write_async(|r| {
                 r.set_pdwn_1(true);
                 r.set_pdwn_2(true);
                 r.set_meas_cc_1(true);
+                r.set_meas_cc_2(false);
             })
             .await?;
 
-        driver
-            .ll
-            .switches_1()
-            .modify_async(|r| {
-                r.set_auto_crc(true);
-                r.set_txcc_1(true);
+        Timer::after_millis(10).await;
+
+        let cc1 = bc_lvl_to_u8(self.ll.status_0().read_async().await?.bc_lvl());
+
+        // Measure CC2: PDWN1|PDWN2|MEAS_CC2
+        self.ll
+            .switches_0()
+            .write_async(|r| {
+                r.set_pdwn_1(true);
+                r.set_pdwn_2(true);
+                r.set_meas_cc_1(false);
+                r.set_meas_cc_2(true);
             })
             .await?;
 
-        driver.ll.mask().write_async(|r| *r = Mask::new()).await?;
-        driver.ll.maska().write_async(|r| *r = Maska::new()).await?;
-        driver.ll.maskb().write_async(|r| *r = Maskb::new()).await?;
+        Timer::after_millis(10).await;
 
-        driver
-            .ll
-            .control_0()
-            .modify_async(|r| {
-                r.set_int_mask(false);
-            })
-            .await?;
+        let cc2 = bc_lvl_to_u8(self.ll.status_0().read_async().await?.bc_lvl());
 
-        Ok(driver)
+        // Select the CC line with higher voltage (indicates connection)
+        let selected_cc = if cc1 > cc2 { CcPin::Cc1 } else { CcPin::Cc2 };
+
+        // Configure switches for the selected CC line
+        match selected_cc {
+            CcPin::Cc1 => {
+                // TX on CC1, AUTO_CRC enabled
+                self.ll
+                    .switches_1()
+                    .write_async(|r| {
+                        r.set_txcc_1(true);
+                        r.set_txcc_2(false);
+                        r.set_auto_crc(true);
+                    })
+                    .await?;
+                // Measure CC1
+                self.ll
+                    .switches_0()
+                    .write_async(|r| {
+                        r.set_pdwn_1(true);
+                        r.set_pdwn_2(true);
+                        r.set_meas_cc_1(true);
+                        r.set_meas_cc_2(false);
+                    })
+                    .await?;
+            }
+            CcPin::Cc2 => {
+                // TX on CC2, AUTO_CRC enabled
+                self.ll
+                    .switches_1()
+                    .write_async(|r| {
+                        r.set_txcc_1(false);
+                        r.set_txcc_2(true);
+                        r.set_auto_crc(true);
+                    })
+                    .await?;
+                // Measure CC2
+                self.ll
+                    .switches_0()
+                    .write_async(|r| {
+                        r.set_pdwn_1(true);
+                        r.set_pdwn_2(true);
+                        r.set_meas_cc_1(false);
+                        r.set_meas_cc_2(true);
+                    })
+                    .await?;
+            }
+        }
+
+        Ok(selected_cc)
     }
 
     pub async fn get_device_info(&mut self) -> Result<DeviceId, FusbError<E>> {
@@ -216,6 +340,7 @@ where
     E: core::fmt::Debug,
 {
     const HAS_AUTO_GOOD_CRC: bool = true;
+    const HAS_AUTO_RETRY: bool = true;
 
     async fn wait_for_vbus(&self) {}
 
@@ -290,7 +415,8 @@ where
             return Err(DriverTxError::Discarded);
         }
 
-        let deadline = Instant::now() + Duration::from_millis(5);
+        // With hardware auto-retry (up to 3 attempts), we need more time than the original 5ms
+        let deadline = Instant::now() + Duration::from_millis(15);
         let mut tx_result = Err(DriverTxError::Discarded);
 
         loop {
@@ -307,6 +433,16 @@ where
                     .await
                     .ok();
                 tx_result = Ok(());
+                break;
+            }
+            if irqa.i_retryfail() {
+                // Hardware auto-retry exhausted all attempts without receiving GoodCRC
+                self.ll
+                    .interrupta()
+                    .modify_async(|r| r.set_i_retryfail(true))
+                    .await
+                    .ok();
+                tx_result = Err(DriverTxError::Discarded);
                 break;
             }
             if irqa.i_hardrst() {

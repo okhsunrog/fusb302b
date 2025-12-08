@@ -702,9 +702,8 @@ checksum = "7dd6e30e90baa6f72411720665d41d89b9a3d039dc45b8faea1ddd07f617f6af"
 
 [[package]]
 name = "usbpd-traits"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "232c39f321d84f331a2741f128537c658caff9b57a9291c2da8953997b698e42"
+version = "1.1.0"
+source = "git+https://github.com/okhsunrog/usbpd.git?branch=feature%2Fdriver-auto-retry-support#892ce66b545d29e9a4956c11ed46bdc181bead0c"
 
 [[package]]
 name = "version_check"
