@@ -384,7 +384,7 @@ where
         let fifo_result = async {
             let mut fifo_buffer = [0u8; 40];
             let mut pos = 0;
-            let packet_byte_count = 2 + data.len();
+            let packet_byte_count = data.len();
             fifo_buffer[pos..pos + 5].copy_from_slice(&[
                 token::SOP1,
                 token::SOP1,
