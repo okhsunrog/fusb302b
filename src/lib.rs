@@ -491,18 +491,17 @@ where
             if irqa.i_hardrst() {
                 return Err(DriverRxError::HardReset);
             }
-            let irq = self
+            // Use RX_EMPTY from STATUS1 (R-only) instead of I_CRC_CHK from
+            // INTERRUPT (R/C). The INTERRUPT register is read-cleared, and
+            // transmit() reads it to check I_COLLISION — which clears I_CRC_CHK
+            // as a side effect, causing a race condition.
+            let status1 = self
                 .ll
-                .interrupt()
+                .status_1()
                 .read_async()
                 .await
                 .map_err(|_| DriverRxError::Discarded)?;
-            if irq.i_crc_chk() {
-                self.ll
-                    .interrupt()
-                    .modify_async(|r| r.set_i_crc_chk(true))
-                    .await
-                    .ok();
+            if !status1.rx_empty() {
                 break;
             }
             if Instant::now() >= deadline {

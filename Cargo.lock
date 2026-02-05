@@ -703,7 +703,7 @@ checksum = "7dd6e30e90baa6f72411720665d41d89b9a3d039dc45b8faea1ddd07f617f6af"
 [[package]]
 name = "usbpd-traits"
 version = "1.1.0"
-source = "git+https://github.com/okhsunrog/usbpd.git?branch=feature%2Fdriver-auto-retry-support#892ce66b545d29e9a4956c11ed46bdc181bead0c"
+source = "git+https://github.com/okhsunrog/usbpd.git?branch=feature%2Fdriver-auto-retry-support#b7c9e19da46e459368306eb173951b0c6a42f459"
 
 [[package]]
 name = "version_check"
