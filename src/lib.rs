@@ -140,12 +140,33 @@ where
     }
 }
 
-pub struct Fusb302b<I2CBus, E>
+/// Trait for custom VBUS detection. Implement this when VBUS is not
+/// connected to the FUSB302B (e.g. EPR voltages >21V where an external
+/// ADC with voltage divider is used instead).
+pub trait VbusDetect {
+    /// Wait until VBUS is present.
+    fn wait_for_vbus(&mut self) -> impl core::future::Future<Output = ()>;
+}
+
+/// No-op VbusDetect impl for `()`, used as default generic parameter.
+impl VbusDetect for () {
+    async fn wait_for_vbus(&mut self) {}
+}
+
+enum VbusSource<V> {
+    /// Use FUSB302B's built-in STATUS0.VBUSOK register.
+    Internal,
+    /// Use a user-provided external detector.
+    External(V),
+}
+
+pub struct Fusb302b<I2CBus, E, V = ()>
 where
     I2CBus: I2c<Error = E>,
     E: core::fmt::Debug,
 {
     pub ll: FusbLowLevel<DeviceInterface<I2CBus>>,
+    vbus_source: VbusSource<V>,
     _marker: core::marker::PhantomData<E>,
 }
 
@@ -157,28 +178,58 @@ pub enum CcPin {
     Cc2,
 }
 
-impl<I2CBus, E> Fusb302b<I2CBus, E>
+impl<I2CBus, E> Fusb302b<I2CBus, E, ()>
 where
     I2CBus: I2c<Error = E> + 'static,
     E: core::fmt::Debug,
 {
+    /// Initialize with built-in VBUS detection (STATUS0.VBUSOK).
+    /// Use when VBUS is connected to the FUSB302B (up to ~21V).
     pub async fn init(i2c: I2CBus) -> Result<Self, FusbError<E>> {
         let mut driver = Self {
             ll: FusbLowLevel::new(DeviceInterface::new(i2c)),
+            vbus_source: VbusSource::Internal,
             _marker: core::marker::PhantomData,
         };
 
-        // Fully reset the FUSB302B
-        driver
-            .ll
-            .reset()
-            .write_async(|r| r.set_sw_res(true))
-            .await?;
+        driver.init_hardware().await?;
+        Ok(driver)
+    }
+}
 
+impl<I2CBus, E, V> Fusb302b<I2CBus, E, V>
+where
+    I2CBus: I2c<Error = E> + 'static,
+    E: core::fmt::Debug,
+    V: VbusDetect,
+{
+    /// Initialize with a custom VBUS detection strategy.
+    /// Use when VBUS is not connected to the FUSB302B (e.g. EPR >21V).
+    pub async fn init_with_vbus_detect(i2c: I2CBus, vbus_detect: V) -> Result<Self, FusbError<E>> {
+        let mut driver = Self {
+            ll: FusbLowLevel::new(DeviceInterface::new(i2c)),
+            vbus_source: VbusSource::External(vbus_detect),
+            _marker: core::marker::PhantomData,
+        };
+
+        driver.init_hardware().await?;
+        Ok(driver)
+    }
+}
+
+impl<I2CBus, E, V> Fusb302b<I2CBus, E, V>
+where
+    I2CBus: I2c<Error = E> + 'static,
+    E: core::fmt::Debug,
+{
+    /// Shared hardware initialization sequence.
+    async fn init_hardware(&mut self) -> Result<(), FusbError<E>> {
+        // Fully reset the FUSB302B
+        self.ll.reset().write_async(|r| r.set_sw_res(true)).await?;
         Timer::after_millis(10).await;
 
         // Verify device is responding
-        let device_id = driver.ll.device_id().read_async().await?;
+        let device_id = self.ll.device_id().read_async().await?;
         // Check that we get a valid known version (A, B, or C)
         match device_id.version_id() {
             Fusb302Version::VersionA | Fusb302Version::VersionB | Fusb302Version::VersionC => {}
@@ -188,8 +239,7 @@ where
         }
 
         // Turn on all power
-        driver
-            .ll
+        self.ll
             .power()
             .write_async(|r| {
                 r.set_pwr_0_bandgap_and_wake_enable(true);
@@ -200,22 +250,18 @@ where
             .await?;
 
         // Set interrupt masks to 0 (all interrupts enabled)
-        driver.ll.mask().write_async(|r| *r = Mask::new()).await?;
-        driver.ll.maska().write_async(|r| *r = Maska::new()).await?;
-        driver.ll.maskb().write_async(|r| *r = Maskb::new()).await?;
+        self.ll.mask().write_async(|r| *r = Mask::new()).await?;
+        self.ll.maska().write_async(|r| *r = Maska::new()).await?;
+        self.ll.maskb().write_async(|r| *r = Maskb::new()).await?;
 
         // Unmask interrupts
-        driver
-            .ll
+        self.ll
             .control_0()
-            .write_async(|r| {
-                r.set_int_mask(false);
-            })
+            .write_async(|r| r.set_int_mask(false))
             .await?;
 
         // Configure hardware auto-retry: 2 retries per USB PD spec (nRetryCount = 2)
-        driver
-            .ll
+        self.ll
             .control_3()
             .write_async(|r| {
                 r.set_auto_retry(true);
@@ -226,23 +272,21 @@ where
             .await?;
 
         // Flush the RX buffer
-        driver
-            .ll
+        self.ll
             .control_1()
             .write_async(|r| r.set_rx_flush(true))
             .await?;
 
         // Detect and select CC line
-        driver.detect_cc_pin().await?;
+        self.detect_cc_pin().await?;
 
         // Reset PD logic
-        driver
-            .ll
+        self.ll
             .reset()
             .write_async(|r| r.set_pd_reset(true))
             .await?;
 
-        Ok(driver)
+        Ok(())
     }
 
     /// Detect which CC pin is connected and configure switches accordingly
@@ -334,23 +378,29 @@ where
     }
 }
 
-impl<I2CBus, E> SinkDriver for Fusb302b<I2CBus, E>
+impl<I2CBus, E, V> SinkDriver for Fusb302b<I2CBus, E, V>
 where
     I2CBus: I2c<Error = E> + 'static,
     E: core::fmt::Debug,
+    V: VbusDetect,
 {
     const HAS_AUTO_GOOD_CRC: bool = true;
     const HAS_AUTO_RETRY: bool = true;
 
     async fn wait_for_vbus(&mut self) {
-        // Poll STATUS0.VBUSOK (R-only, bit 7) until VBUS is above ~4.0V.
-        loop {
-            if let Ok(status0) = self.ll.status_0().read_async().await {
-                if status0.vbusok() {
-                    return;
+        match &mut self.vbus_source {
+            VbusSource::Internal => {
+                // Poll STATUS0.VBUSOK (R-only, bit 7) until VBUS is above ~4.0V.
+                loop {
+                    if let Ok(status0) = self.ll.status_0().read_async().await
+                        && status0.vbusok()
+                    {
+                        return;
+                    }
+                    Timer::after_millis(10).await;
                 }
             }
-            Timer::after_millis(10).await;
+            VbusSource::External(v) => v.wait_for_vbus().await,
         }
     }
 
