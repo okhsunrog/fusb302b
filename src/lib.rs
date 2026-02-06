@@ -342,7 +342,17 @@ where
     const HAS_AUTO_GOOD_CRC: bool = true;
     const HAS_AUTO_RETRY: bool = true;
 
-    async fn wait_for_vbus(&self) {}
+    async fn wait_for_vbus(&mut self) {
+        // Poll STATUS0.VBUSOK (R-only, bit 7) until VBUS is above ~4.0V.
+        loop {
+            if let Ok(status0) = self.ll.status_0().read_async().await {
+                if status0.vbusok() {
+                    return;
+                }
+            }
+            Timer::after_millis(10).await;
+        }
+    }
 
     async fn transmit_hard_reset(&mut self) -> Result<(), DriverTxError> {
         self.ll

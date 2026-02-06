@@ -2,18 +2,6 @@
 
 ## High priority
 
-### `wait_for_vbus()` is a no-op
-
-**File:** `src/lib.rs:345`
-
-Currently returns immediately. The FUSB302B has `VBUSOK` in STATUS0 (bit 7)
-and `I_VBUSOK` in INTERRUPT (bit 7). The sink state machine calls
-`wait_for_vbus()` during the `Discovery` state before attempting PD
-negotiation. Without actually waiting, the driver may try to negotiate before
-the source provides VBUS power.
-
-Should poll `STATUS0.VBUSOK` until it reads true, with a timeout.
-
 ### SPECREV in switches_1 never updated after revision negotiation
 
 **File:** `src/lib.rs:288-293, 308-313`
