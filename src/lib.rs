@@ -160,13 +160,44 @@ enum VbusSource<V> {
     External(V),
 }
 
-pub struct Fusb302b<I2CBus, E, V = ()>
+/// Trait for waiting on the FUSB302B INT_N pin.
+/// INT_N is open-drain, active-low: it asserts (goes LOW) when any unmasked
+/// interrupt flag is set, and returns HIGH once all flags are cleared.
+///
+/// The default `()` implementation falls back to 1ms polling (no pin needed).
+pub trait InterruptPin {
+    /// Wait for an interrupt event. For a real GPIO pin this should wait
+    /// until INT_N is low. For the `()` fallback this sleeps 1ms.
+    fn wait_for_interrupt(&mut self) -> impl core::future::Future<Output = ()>;
+}
+
+/// Polling fallback: sleep 1ms between register reads (original behavior).
+impl InterruptPin for () {
+    async fn wait_for_interrupt(&mut self) {
+        Timer::after_millis(1).await;
+    }
+}
+
+/// Wrapper to use an `embedded_hal_async::digital::Wait` GPIO pin as an interrupt source.
+/// The pin should be connected to the FUSB302B INT_N output with an external pull-up.
+pub struct GpioInterrupt<P>(pub P);
+
+impl<P: embedded_hal_async::digital::Wait> InterruptPin for GpioInterrupt<P> {
+    async fn wait_for_interrupt(&mut self) {
+        // wait_for_low returns immediately if already low (per embedded-hal-async spec),
+        // which is correct for the level-triggered INT_N signal.
+        let _ = self.0.wait_for_low().await;
+    }
+}
+
+pub struct Fusb302b<I2CBus, E, V = (), I = ()>
 where
     I2CBus: I2c<Error = E>,
     E: core::fmt::Debug,
 {
     pub ll: FusbLowLevel<DeviceInterface<I2CBus>>,
     vbus_source: VbusSource<V>,
+    int_pin: I,
     _marker: core::marker::PhantomData<E>,
 }
 
@@ -178,17 +209,17 @@ pub enum CcPin {
     Cc2,
 }
 
-impl<I2CBus, E> Fusb302b<I2CBus, E, ()>
+impl<I2CBus, E> Fusb302b<I2CBus, E, (), ()>
 where
     I2CBus: I2c<Error = E> + 'static,
     E: core::fmt::Debug,
 {
-    /// Initialize with built-in VBUS detection (STATUS0.VBUSOK).
-    /// Use when VBUS is connected to the FUSB302B (up to ~21V).
+    /// Initialize with built-in VBUS detection and polling (no interrupt pin).
     pub async fn init(i2c: I2CBus) -> Result<Self, FusbError<E>> {
         let mut driver = Self {
             ll: FusbLowLevel::new(DeviceInterface::new(i2c)),
             vbus_source: VbusSource::Internal,
+            int_pin: (),
             _marker: core::marker::PhantomData,
         };
 
@@ -197,18 +228,41 @@ where
     }
 }
 
-impl<I2CBus, E, V> Fusb302b<I2CBus, E, V>
+impl<I2CBus, E, I> Fusb302b<I2CBus, E, (), I>
+where
+    I2CBus: I2c<Error = E> + 'static,
+    E: core::fmt::Debug,
+    I: InterruptPin,
+{
+    /// Initialize with built-in VBUS detection and an interrupt pin.
+    pub async fn init_with_interrupt_pin(
+        i2c: I2CBus,
+        int_pin: I,
+    ) -> Result<Self, FusbError<E>> {
+        let mut driver = Self {
+            ll: FusbLowLevel::new(DeviceInterface::new(i2c)),
+            vbus_source: VbusSource::Internal,
+            int_pin,
+            _marker: core::marker::PhantomData,
+        };
+
+        driver.init_hardware().await?;
+        Ok(driver)
+    }
+}
+
+impl<I2CBus, E, V> Fusb302b<I2CBus, E, V, ()>
 where
     I2CBus: I2c<Error = E> + 'static,
     E: core::fmt::Debug,
     V: VbusDetect,
 {
-    /// Initialize with a custom VBUS detection strategy.
-    /// Use when VBUS is not connected to the FUSB302B (e.g. EPR >21V).
+    /// Initialize with a custom VBUS detection strategy and polling (no interrupt pin).
     pub async fn init_with_vbus_detect(i2c: I2CBus, vbus_detect: V) -> Result<Self, FusbError<E>> {
         let mut driver = Self {
             ll: FusbLowLevel::new(DeviceInterface::new(i2c)),
             vbus_source: VbusSource::External(vbus_detect),
+            int_pin: (),
             _marker: core::marker::PhantomData,
         };
 
@@ -217,7 +271,32 @@ where
     }
 }
 
-impl<I2CBus, E, V> Fusb302b<I2CBus, E, V>
+impl<I2CBus, E, V, I> Fusb302b<I2CBus, E, V, I>
+where
+    I2CBus: I2c<Error = E> + 'static,
+    E: core::fmt::Debug,
+    V: VbusDetect,
+    I: InterruptPin,
+{
+    /// Initialize with both a custom VBUS detection strategy and an interrupt pin.
+    pub async fn init_with_vbus_and_interrupt(
+        i2c: I2CBus,
+        vbus_detect: V,
+        int_pin: I,
+    ) -> Result<Self, FusbError<E>> {
+        let mut driver = Self {
+            ll: FusbLowLevel::new(DeviceInterface::new(i2c)),
+            vbus_source: VbusSource::External(vbus_detect),
+            int_pin,
+            _marker: core::marker::PhantomData,
+        };
+
+        driver.init_hardware().await?;
+        Ok(driver)
+    }
+}
+
+impl<I2CBus, E, V, I> Fusb302b<I2CBus, E, V, I>
 where
     I2CBus: I2c<Error = E> + 'static,
     E: core::fmt::Debug,
@@ -378,11 +457,12 @@ where
     }
 }
 
-impl<I2CBus, E, V> SinkDriver for Fusb302b<I2CBus, E, V>
+impl<I2CBus, E, V, I> SinkDriver for Fusb302b<I2CBus, E, V, I>
 where
     I2CBus: I2c<Error = E> + 'static,
     E: core::fmt::Debug,
     V: VbusDetect,
+    I: InterruptPin,
 {
     const HAS_AUTO_GOOD_CRC: bool = true;
     const HAS_AUTO_RETRY: bool = true;
@@ -397,7 +477,7 @@ where
                     {
                         return;
                     }
-                    Timer::after_millis(10).await;
+                    self.int_pin.wait_for_interrupt().await;
                 }
             }
             VbusSource::External(v) => v.wait_for_vbus().await,
@@ -430,7 +510,7 @@ where
             if Instant::now() >= deadline {
                 return Err(DriverTxError::Discarded);
             }
-            Timer::after_millis(1).await;
+            self.int_pin.wait_for_interrupt().await;
         }
     }
 
@@ -528,7 +608,7 @@ where
             if Instant::now() >= deadline {
                 break;
             }
-            Timer::after_millis(1).await;
+            self.int_pin.wait_for_interrupt().await;
         }
 
         self.ll
@@ -567,7 +647,7 @@ where
             if Instant::now() >= deadline {
                 return Err(DriverRxError::Discarded);
             }
-            Timer::after_millis(1).await;
+            self.int_pin.wait_for_interrupt().await;
         }
 
         let mut token_buf = [0u8; 1];
