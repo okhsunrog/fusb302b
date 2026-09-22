@@ -4,13 +4,13 @@ This crate provides an `async` driver for the ONSEMI [FUSB302B](https://www.onse
 
 The driver is designed to work as a PHY (physical layer) driver for a higher-level USB-PD Policy Engine. It achieves this by implementing the `Driver` trait from the **[usbpd-traits](https://crates.io/crates/usbpd-traits)** crate, making it directly compatible with consumers of that trait, such as the [elagil/usbpd](https://github.com/elagil/usbpd) policy engine.
 
-This project also serves as a real-world example of using the powerful [diondokter/device-driver](https://github.com/diondokter/device-driver) toolkit to create robust, type-safe peripheral drivers from a simple YAML definition.
+This project also serves as a real-world example of using the powerful [diondokter/device-driver](https://github.com/diondokter/device-driver) toolkit to create robust, type-safe peripheral drivers from a simple DDSL definition.
 
 ## Features
 
 *   **`async`/.await**: Fully asynchronous, non-blocking operation suitable for use with executors like `embassy`.
 *   **PHY Driver**: Implements the `usbpd_traits::Driver` trait, providing a standard interface for sending and receiving USB-PD packets.
-*   **Register-Safe**: All register access is defined in a clear `device.yaml` file and generated at compile time by the `device-driver` crate, preventing illegal register access and providing a type-safe API.
+*   **Register-Safe**: All register access is defined in a clear `device.ddsl` file and generated at compile time by the `device-driver` crate, preventing illegal register access and providing a type-safe API.
 *   **Robust**: Correctly handles low-level hardware interactions, including FIFO management, interrupt polling, and token-based packet transmission as specified by the FUSB302B datasheet.
 *   **Minimal and Focused**: The driver focuses solely on its role as a PHY, leaving all protocol logic, timing, and policy decisions to a higher-level library.
 
@@ -18,7 +18,7 @@ This project also serves as a real-world example of using the powerful [diondokt
 
 This driver demonstrates a clean, layered approach to embedded systems design, glued together by a shared trait:
 
-1.  **Hardware Abstraction (`device-driver`)**: At the lowest level, the `device-driver` crate takes a `device.yaml` file describing the FUSB302B's registers and generates a safe, low-level API (`FusbLowLevel`). This completely abstracts away the I2C read/write operations and magic numbers associated with register bits.
+1.  **Hardware Abstraction (`device-driver`)**: At the lowest level, the `device-driver` crate takes a `device.ddsl` file describing the FUSB302B's registers and generates a safe, low-level API (`FusbLowLevel`). This completely abstracts away the I2C read/write operations and magic numbers associated with register bits.
 
 2.  **PHY Driver (`Fusb302b`)**: This is the core of this crate. The `Fusb302b` struct wraps the generated low-level API and implements the `usbpd_traits::Driver` trait. Its sole responsibility is to translate the policy engine's high-level commands (e.g., "transmit this packet") into the specific sequence of operations required by the FUSB302B hardware.
 

@@ -1,0 +1,544 @@
+device FusbLowLevel {
+    default-byte-order: BE,
+    register-address-type: u8,
+    buffer-address-type: u8,
+    word-boundaries: "_:-: :bB:A1:1A:1a:a1:AAa",
+    default-access: RW,
+
+    /// Device Identification Register. Contains Version, Product, and Revision IDs.
+    register DeviceId {
+        address: 0x01,
+        access: RO,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// Device Version ID. Corresponds to major hardware revisions. See Table 17.
+            field version_id 7:4 -> _ as
+                /// Major hardware version of the FUSB302B device.
+                enum Fusb302Version {
+                    /// Version A Hardware
+                    VersionA: 0b1000,
+                    /// Version B Hardware
+                    VersionB: 0b1001,
+                    /// Version C Hardware
+                    VersionC: 0b1010,
+                    /// An unknown or future hardware version.
+                    UnknownOrFutureVersion: catch-all _,
+                },
+            /// Product ID, distinguishing different FUSB302B variants/packages. See Table 17.
+            field product_id 3:2 -> _ as
+                /// Specific product variant or package of the FUSB302B device.
+                enum Fusb302Product {
+                    /// FUSB302BMPX/FUSB302BVMPX(Default) & FUSB302BUCX
+                    DefaultUcWlcsp: 0,
+                    /// FUSB302B01MPX (MLP only)
+                    Mlp01: 0b01,
+                    /// FUSB302B10MPX (MLP only)
+                    Mlp10: 0b10,
+                    /// FUSB302B11MPX (MLP only)
+                    Mlp11: 0b11,
+                },
+            /// Revision ID, indicating minor revision for the given hardware Version. See Table 17.
+            field revision_id 1:0 -> _ as
+                /// Minor revision of the FUSB302B device for its specific hardware version.
+                enum Fusb302Revision {
+                    /// Revision A
+                    RevA: 0b00,
+                    /// Revision B
+                    RevB: 0b01,
+                    /// Revision C
+                    RevC: 0b10,
+                    /// Revision D
+                    RevD: 0b11,
+                },
+        },
+    },
+    /// Switch Control Register 0
+    register Switches0 {
+        address: 0x02,
+        reset: 0b00000011,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// Pull-up enable for CC2 (true: apply host pull-up current).
+            field pu_en2 7,
+            /// Pull-up enable for CC1 (true: apply host pull-up current).
+            field pu_en1 6,
+            /// VCONN enable for CC2 (true: turn on VCONN current).
+            field vconn_cc2 5,
+            /// VCONN enable for CC1 (true: turn on VCONN current).
+            field vconn_cc1 4,
+            /// Measure CC2 (true: monitor/measure voltage on CC2).
+            field meas_cc2 3,
+            /// Measure CC1 (true: monitor/measure voltage on CC1).
+            field meas_cc1 2,
+            /// Pull-down for CC2 (true: device pull-down on).
+            field pdwn2 1,
+            /// Pull-down for CC1 (true: device pull-down on).
+            field pdwn1 0,
+        },
+    },
+    /// Switch Control Register 1
+    register Switches1 {
+        address: 0x03,
+        reset: 0b00100000,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// Power role for GoodCRC packet.
+            field powerrole 7 -> _ as enum PowerRolePort {
+                /// Sink for SOP
+                Sink: 0,
+                /// Source for SOP
+                Source: 1,
+            },
+            /// Specification revision for GoodCRC packet.
+            field specrev 6:5 -> _ as try enum SpecRev {
+                /// Revision 1.0
+                Revision1_0: 0,
+                /// Revision 2.0
+                Revision2_0: 1,
+            },
+            /// Data role for GoodCRC packet (true: SRC, false: SNK for SOP).
+            field datarole 4,
+            /// Automatic CRC handling (true: auto-send GoodCRC on valid packet).
+            field auto_crc 2,
+            /// Transmit on CC2 (true: enable BMC transmit driver).
+            field txcc2 1,
+            /// Transmit on CC1 (true: enable BMC transmit driver).
+            field txcc1 0,
+        },
+    },
+    /// Measure Control Register. Used to configure MDAC for CC or VBUS measurements.
+    register Measure {
+        address: 0x04,
+        reset: 0b00110001,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// Selects MDAC/comparator target. true: Measure VBUS (MEAS_CC* in Switches0 must be 0), false: Measure CC (selected by MEAS_CC*).
+            field meas_vbus 6,
+            /// Measure Block DAC data input (6-bit value). LSB is ~42mV if meas_vbus=false (CC measurement), or ~420mV if meas_vbus=true (VBUS measurement).
+            field mdac 5:0,
+        },
+    },
+    /// Slice Control Register
+    register Slice {
+        address: 0x05,
+        reset: 0b01100000,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// SDAC hysteresis setting.
+            field sdac_hys 7:6 -> _ as enum SlicerHysteresis {
+                /// No hysteresis
+                NoHysteresis: 0,
+                /// 85mV hysteresis
+                Hys85mV: 1,
+                /// 170mV hysteresis
+                Hys170mV: 2,
+                /// 255mV hysteresis
+                Hys255mV: 3,
+            },
+            /// SDAC setting for BMC slicer DAC threshold.
+            field sdac 5:0,
+        },
+    },
+    /// Control Register 0
+    register Control0 {
+        address: 0x06,
+        reset: 0b00100100,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// Flush transmit FIFO. Write true to trigger; self-clearing.
+            field tx_flush 6 WO,
+            /// Interrupt mask (true: mask all interrupts).
+            field int_mask 5,
+            /// Host current setting for pull-ups.
+            field host_cur 3:2 -> _ as enum HostCurrent {
+                /// No current
+                NoCurrent: 0,
+                /// 80µA - Default USB power
+                Default80uA: 1,
+                /// 180µA - 1.5A
+                Medium180uA: 2,
+                /// 330µA - 3A
+                High330uA: 3,
+            },
+            /// Auto preamble (true: auto-start transmitter on good CRC).
+            field auto_pre 1,
+            /// Start transmission. Write true to trigger; self-clearing.
+            field tx_start 0 WO,
+        },
+    },
+    /// Control Register 1
+    register Control1 {
+        address: 0x07,
+        reset: 0b00000000,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// Enable SOP'' Debug packets (true: enabled).
+            field ensop2db 6,
+            /// Enable SOP' Debug packets (true: enabled).
+            field ensop1db 5,
+            /// BIST Mode 01s pattern (true: enabled for testing).
+            field bist_mode2 4,
+            /// Flush receive FIFO. Write true to trigger; self-clearing.
+            field rx_flush 2 WO,
+            /// Enable SOP'' packets (true: enabled).
+            field ensop2 1,
+            /// Enable SOP' packets (true: enabled).
+            field ensop1 0,
+        },
+    },
+    /// Control Register 2
+    register Control2 {
+        address: 0x08,
+        reset: 0b00000010,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// Toggle save power setting.
+            field tog_save_pwr 7:6 -> _ as enum TogSavePwr {
+                /// No disable state
+                NoDisable: 0,
+                /// Wait 40ms between cycles
+                Wait40ms: 1,
+                /// Wait 80ms between cycles
+                Wait80ms: 2,
+                /// Wait 160ms between cycles
+                Wait160ms: 3,
+            },
+            /// Toggle Rd only (true: stop on Rd only).
+            field tog_rd_only 5,
+            /// Wake detection enable (true: enabled).
+            field wake_en 3,
+            /// Toggle mode selection.
+            field mode 2:1 -> _ as try enum ToggleMode {
+                /// DRP polling
+                DrpPolling: 1,
+                /// SNK polling
+                SnkPolling: 2,
+                /// SRC polling
+                SrcPolling: 3,
+            },
+            /// Enable toggle (true: autonomous DRP/SNK/SRC toggle).
+            field toggle 0,
+        },
+    },
+    /// Control Register 3
+    register Control3 {
+        address: 0x09,
+        reset: 0b00000110,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// Send hard reset. Write true to initiate; self-clearing.
+            field send_hard_reset 6 WO,
+            /// BIST test mode (true: clear RxFIFO after GoodCRC).
+            field bist_tmode 5,
+            /// Auto hard reset on soft reset fail (true: enabled).
+            field auto_hardreset 4,
+            /// Auto soft reset on retries fail (true: enabled).
+            field auto_softreset 3,
+            /// Number of packet retries.
+            field n_retries 2:1 -> _ as enum RetryCount {
+                /// No retries
+                NoRetries: 0,
+                /// 1 retry
+                OneRetry: 1,
+                /// 2 retries
+                TwoRetries: 2,
+                /// 3 retries
+                ThreeRetries: 3,
+            },
+            /// Auto retry on no GoodCRC (true: enabled).
+            field auto_retry 0,
+        },
+    },
+    /// Interrupt Mask Register
+    register Mask {
+        address: 0x0A,
+        reset: 0b00000000,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// Mask I_VBUSOK interrupt (true: masked).
+            field m_vbusok 7,
+            /// Mask I_ACTIVITY interrupt (true: masked).
+            field m_activity 6,
+            /// Mask I_COMP_CHNG interrupt (true: masked).
+            field m_comp_chng 5,
+            /// Mask I_CRC_CHK interrupt (true: masked).
+            field m_crc_chk 4,
+            /// Mask I_ALERT interrupt (true: masked).
+            field m_alert 3,
+            /// Mask I_WAKE interrupt (true: masked).
+            field m_wake 2,
+            /// Mask I_COLLISION interrupt (true: masked).
+            field m_collision 1,
+            /// Mask I_BC_LVL interrupt (true: masked).
+            field m_bc_lvl 0,
+        },
+    },
+    /// Power Control Register
+    register Power {
+        address: 0x0B,
+        reset: 0b00000001,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// Enable internal oscillator (PWR[3]).
+            field pwr3_internal_oscillator_enable 3,
+            /// Measure block powered (PWR[2]).
+            field pwr2_measure_block_power_enable 2,
+            /// Receiver powered and current references for Measure block (PWR[1]).
+            field pwr1_receiver_and_measure_refs_enable 1,
+            /// Bandgap and wake circuit enabled (PWR[0]).
+            field pwr0_bandgap_and_wake_enable 0,
+        },
+    },
+    /// Reset Control Register
+    register Reset {
+        address: 0x0C,
+        access: WO,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// Reset PD logic. Write true to reset; self-clearing.
+            field pd_reset 1,
+            /// Software reset. Write true to reset entire device; self-clearing.
+            field sw_res 0,
+        },
+    },
+    /// Over-Current Protection Register
+    register Ocpreg {
+        address: 0x0D,
+        reset: 0b00001111,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// OCP range (true: 100-800mA, false: 10-80mA).
+            field ocp_range 3,
+            /// OCP current setting (fraction of max range).
+            field ocp_cur 2:0,
+        },
+    },
+    /// Interrupt Mask Register A
+    register Maska {
+        address: 0x0E,
+        reset: 0b00000000,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// Mask I_OCP_TEMP interrupt (true: masked).
+            field m_ocp_temp 7,
+            /// Mask I_TOGDONE interrupt (true: masked).
+            field m_togdone 6,
+            /// Mask I_SOFTFAIL interrupt (true: masked).
+            field m_softfail 5,
+            /// Mask I_RETRYFAIL interrupt (true: masked).
+            field m_retryfail 4,
+            /// Mask I_HARDSENT interrupt (true: masked).
+            field m_hardsent 3,
+            /// Mask I_TXSENT interrupt (true: masked).
+            field m_txsent 2,
+            /// Mask I_SOFTRST interrupt (true: masked).
+            field m_softrst 1,
+            /// Mask I_HARDRST interrupt (true: masked).
+            field m_hardrst 0,
+        },
+    },
+    /// Interrupt Mask Register B
+    register Maskb {
+        address: 0x0F,
+        reset: 0b00000000,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// Mask I_GCRCSENT interrupt (true: masked).
+            field m_gcrcsent 0,
+        },
+    },
+    /// Control Register 4
+    register Control4 {
+        address: 0x10,
+        reset: 0b00000000,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// Toggle exit on audio accessory (true: stop on Ra both CC).
+            field tog_exit_aud 0,
+        },
+    },
+    /// Status Register 0A
+    register Status0a {
+        address: 0x3C,
+        access: RO,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// Soft reset retries failed (true: failed).
+            field softfail 5,
+            /// Packet retries failed (true: failed).
+            field retryfail 4,
+            /// Internal power state bits (POWER3, POWER2).
+            field power 3:2,
+            /// Soft reset packet received (true: received).
+            field softrst 1,
+            /// Hard reset received (true: received).
+            field hardrst 0,
+        },
+    },
+    /// Status Register 1A
+    register Status1a {
+        address: 0x3D,
+        access: RO,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// Toggle state status.
+            field togss 5:3 -> _ as try enum ToggleState {
+                /// Toggle logic running
+                Running: 0b000,
+                /// Settled to SRC on CC1
+                SrcCC1: 0b001,
+                /// Settled to SRC on CC2
+                SrcCC2: 0b010,
+                /// Settled to SNK on CC1
+                SnkCC1: 0b101,
+                /// Settled to SNK on CC2
+                SnkCC2: 0b110,
+                /// Audio accessory detected
+                AudioAccessory: 7,
+            },
+            /// Last packet SOP'' Debug (true: yes).
+            field rxsop2db 2,
+            /// Last packet SOP' Debug (true: yes).
+            field rxsop1db 1,
+            /// Last packet SOP (true: yes).
+            field rxsop 0,
+        },
+    },
+    /// Interrupt Register A. Read to get status, write 1 to corresponding bit to clear.
+    register Interrupta {
+        address: 0x3E,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// OCP or over-temp interrupt (true: occurred). Write 1 to clear this flag.
+            field i_ocp_temp 7,
+            /// Toggle done interrupt (true: occurred). Write 1 to clear this flag.
+            field i_togdone 6,
+            /// Soft reset fail interrupt (true: occurred). Write 1 to clear this flag.
+            field i_softfail 5,
+            /// Retry fail interrupt (true: occurred). Write 1 to clear this flag.
+            field i_retryfail 4,
+            /// Hard reset sent interrupt (true: occurred). Write 1 to clear this flag.
+            field i_hardsent 3,
+            /// Packet sent interrupt (true: occurred). Write 1 to clear this flag.
+            field i_txsent 2,
+            /// Soft reset received interrupt (true: occurred). Write 1 to clear this flag.
+            field i_softrst 1,
+            /// Hard reset received interrupt (true: occurred). Write 1 to clear this flag.
+            field i_hardrst 0,
+        },
+    },
+    /// Interrupt Register B. Read to get status, write 1 to corresponding bit to clear.
+    register Interruptb {
+        address: 0x3F,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// GoodCRC sent interrupt (true: occurred). Write 1 to clear this flag.
+            field i_gcrcsent 0,
+        },
+    },
+    /// Status Register 0
+    register Status0 {
+        address: 0x40,
+        access: RO,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// VBUS OK (true: VBUS valid).
+            field vbusok 7,
+            /// CC activity detected (true: active).
+            field activity 6,
+            /// Comparator result (true: CC > MDAC).
+            field comp 5,
+            /// CRC check valid (true: last packet CRC correct).
+            field crc_chk 4,
+            /// Alert condition (true: error occurred).
+            field alert 3,
+            /// Wake detected (true: device attempting attach).
+            field wake 2,
+            /// Current voltage status of the measured CC pin interpreted as host current levels.
+            field bc_lvl 1:0 -> _ as enum BcLvl {
+                /// <200mV
+                LessThan200mV: 0b00,
+                /// >200mV, <660mV
+                Between200And660mV: 0b01,
+                /// >660mV, <1.23V
+                Between660And1230mV: 0b10,
+                /// >1.23V
+                GreaterThan1230mV: 0b11,
+            },
+        },
+    },
+    /// Status Register 1
+    register Status1 {
+        address: 0x41,
+        access: RO,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// Last packet SOP'' (true: yes).
+            field rxsop2 7,
+            /// Last packet SOP' (true: yes).
+            field rxsop1 6,
+            /// Receive FIFO empty (true: empty).
+            field rx_empty 5,
+            /// Receive FIFO full (true: full).
+            field rx_full 4,
+            /// Transmit FIFO empty (true: empty).
+            field tx_empty 3,
+            /// Transmit FIFO full (true: full).
+            field tx_full 2,
+            /// Over-temperature (true: too high).
+            field ovrtemp 1,
+            /// Over-current on VCONN (true: occurred).
+            field ocp 0,
+        },
+    },
+    /// Interrupt Status Register. Read to get status, write 1 to corresponding bit to clear.
+    register Interrupt {
+        address: 0x42,
+        fields: fieldset _ {
+            size-bytes: 1,
+
+            /// VBUSOK interrupt (true: VBUS transitioned). Write 1 to clear this flag.
+            field i_vbusok 7,
+            /// Activity interrupt (true: CC activity change). Write 1 to clear this flag.
+            field i_activity 6,
+            /// Comparator change interrupt (true: occurred). Write 1 to clear this flag.
+            field i_comp_chng 5,
+            /// CRC check interrupt (true: packet validated). Write 1 to clear this flag.
+            field i_crc_chk 4,
+            /// Alert interrupt (true: error condition). Write 1 to clear this flag.
+            field i_alert 3,
+            /// Wake interrupt (true: device attach attempt). Write 1 to clear this flag.
+            field i_wake 2,
+            /// Collision interrupt (true: transmit attempted during activity). Write 1 to clear this flag.
+            field i_collision 1,
+            /// BC_LVL interrupt (true: current level changed). Write 1 to clear this flag.
+            field i_bc_lvl 0,
+        },
+    },
+    /// FIFO buffer for USB PD communication (write to Tx, read from Rx).
+    buffer Fifo {
+        address: 0x43,
+    },
+}

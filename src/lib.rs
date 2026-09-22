@@ -19,15 +19,20 @@ mod token {
     pub const SOP_PATTERN: u8 = 0b1110_0000;
 }
 
-use device_driver::{AsyncBufferInterface, AsyncRegisterInterface, BufferInterfaceError};
+use device_driver::{
+    AsyncBufferInterface, AsyncRegisterInterface, BufferInterfaceBase, FieldsetMetadata,
+    RegisterInterfaceBase,
+};
 use embedded_hal_async::i2c::I2c;
 use thiserror::Error;
 
-use crate::field_sets::{DeviceId, Mask, Maska, Maskb};
 use embassy_time::{Duration, Instant, Timer};
 use usbpd_traits::{Driver as SinkDriver, DriverRxError, DriverTxError};
 
-device_driver::create_device!(device_name: FusbLowLevel, manifest: "device.yaml");
+device_driver::compile!(
+    options: "--rust-defmt-feature=defmt",
+    manifest: "device.ddsl"
+);
 pub const FUSB302B_I2C_ADDRESS: u8 = 0x22;
 
 /// Convert BcLvl enum to comparable u8 value
@@ -59,19 +64,25 @@ impl<I> DeviceInterface<I> {
     }
 }
 
-impl<I, E> AsyncRegisterInterface for DeviceInterface<I>
+impl<I, E> RegisterInterfaceBase for DeviceInterface<I>
 where
     I: I2c<Error = E>,
     E: core::fmt::Debug,
 {
     type AddressType = u8;
     type Error = FusbError<E>;
+}
 
+impl<I, E> AsyncRegisterInterface for DeviceInterface<I>
+where
+    I: I2c<Error = E>,
+    E: core::fmt::Debug,
+{
     async fn read_register(
         &mut self,
         address: u8,
-        _size_bits: u32,
         data: &mut [u8],
+        _metadata: &FieldsetMetadata,
     ) -> Result<(), Self::Error> {
         self.i2c
             .write_read(FUSB302B_I2C_ADDRESS, &[address], data)
@@ -82,8 +93,8 @@ where
     async fn write_register(
         &mut self,
         address: u8,
-        _size_bits: u32,
-        data: &[u8],
+        data: &mut [u8],
+        _metadata: &FieldsetMetadata,
     ) -> Result<(), Self::Error> {
         let mut buffer = [0u8; 5];
         if (1 + data.len()) > buffer.len() {
@@ -98,11 +109,12 @@ where
     }
 }
 
-impl<I, E> BufferInterfaceError for DeviceInterface<I>
+impl<I, E> BufferInterfaceBase for DeviceInterface<I>
 where
     I: I2c<Error = E>,
     E: core::fmt::Debug,
 {
+    type AddressType = u8;
     type Error = FusbError<E>;
 }
 
@@ -111,8 +123,6 @@ where
     I: I2c<Error = E>,
     E: core::fmt::Debug,
 {
-    type AddressType = u8;
-
     async fn write(&mut self, address: u8, buf: &[u8]) -> Result<usize, Self::Error> {
         let mut buffer = [0u8; 64];
         if (1 + buf.len()) > buffer.len() {
@@ -235,10 +245,7 @@ where
     I: InterruptPin,
 {
     /// Initialize with built-in VBUS detection and an interrupt pin.
-    pub async fn init_with_interrupt_pin(
-        i2c: I2CBus,
-        int_pin: I,
-    ) -> Result<Self, FusbError<E>> {
+    pub async fn init_with_interrupt_pin(i2c: I2CBus, int_pin: I) -> Result<Self, FusbError<E>> {
         let mut driver = Self {
             ll: FusbLowLevel::new(DeviceInterface::new(i2c)),
             vbus_source: VbusSource::Internal,
@@ -329,9 +336,15 @@ where
             .await?;
 
         // Set interrupt masks to 0 (all interrupts enabled)
-        self.ll.mask().write_async(|r| *r = Mask::new()).await?;
-        self.ll.maska().write_async(|r| *r = Maska::new()).await?;
-        self.ll.maskb().write_async(|r| *r = Maskb::new()).await?;
+        self.ll.mask().write_async(|r| *r = Mask::default()).await?;
+        self.ll
+            .maska()
+            .write_async(|r| *r = Maska::default())
+            .await?;
+        self.ll
+            .maskb()
+            .write_async(|r| *r = Maskb::default())
+            .await?;
 
         // Unmask interrupts
         self.ll
@@ -667,10 +680,12 @@ where
             return Err(DriverRxError::Discarded);
         }
 
+        // The I2C buffer interface always fills the whole slice, so a single
+        // read is an exact read here.
         let mut header_buf = [0u8; 2];
         self.ll
             .fifo()
-            .read_exact_async(&mut header_buf)
+            .read_async(&mut header_buf)
             .await
             .map_err(|_| DriverRxError::Discarded)?;
 
@@ -692,7 +707,7 @@ where
         if payload_len > 0 {
             self.ll
                 .fifo()
-                .read_exact_async(&mut buffer[2..total_len])
+                .read_async(&mut buffer[2..total_len])
                 .await
                 .map_err(|_| DriverRxError::Discarded)?;
         }
@@ -700,7 +715,7 @@ where
         let mut crc_buf = [0u8; 4];
         self.ll
             .fifo()
-            .read_exact_async(&mut crc_buf)
+            .read_async(&mut crc_buf)
             .await
             .map_err(|_| DriverRxError::Discarded)?;
 

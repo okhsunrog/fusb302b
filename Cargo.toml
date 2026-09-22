@@ -1,6 +1,6 @@
 [package]
 name = "fusb302b"
-version = "0.0.1"
+version = "0.1.0"
 edition = "2024"
 description = "FUSB302B driver for `usbpd` library, implementing `usbpd-traits`, using `device-driver` crate."
 documentation = "https://docs.rs/fusb302b"
@@ -21,13 +21,13 @@ log = { version = "0.4", optional = true }
 # heapless = { version = "0.8", features = ["defmt-03"] }
 embassy-time = "0.5"
 usbpd-traits = { git = "https://github.com/elagil/usbpd.git", branch = "main" }
-device-driver = { version = "1.0.6", default-features = false, features = ["yaml"] }
+device-driver = { version = "2.1.1", default-features = false, features = ["macros"] }
 thiserror = { version = "2.0.12", default-features = false }
 
 [features]
 default = []
 std = ["thiserror/std"]
 log = ["dep:log"]
-defmt = ["dep:defmt", "embedded-hal-async/defmt-03", "device-driver/defmt-03"]
+defmt = ["dep:defmt", "embedded-hal-async/defmt-03", "device-driver/defmt"]
 
 
