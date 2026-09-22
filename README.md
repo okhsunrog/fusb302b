@@ -89,3 +89,7 @@ This crate stands on the shoulders of giants and wouldn't be possible without th
 *   **[elagil/usbpd](https://github.com/elagil/usbpd)**: Provides the hardware-agnostic USB-PD policy engine that this driver is designed to serve. The `usbpd-traits` sub-crate provides the essential `Driver` trait that enables this modular design.
 *   **[diondokter/device-driver](https://github.com/diondokter/device-driver)**: The code generation toolkit that provides the foundation for safe and structured register access, making this driver significantly more robust and easier to develop.
 *   **[fmckeogh/usb-pd-rs](https://github.com/fmckeogh/usb-pd-rs)**: The archived predecessor to the modern `usbpd` ecosystem. This `fusb302b` driver is a ground-up rewrite heavily inspired by the original driver logic found in that repository.
+
+## License
+
+This project is dual-licensed under the [MIT License](LICENSE-MIT) or [Apache License 2.0](LICENSE-APACHE), at your option.
